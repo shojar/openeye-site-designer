@@ -46,6 +46,7 @@ type MapSlot = {
   widthFt: number;
   scaleMeasureFeet: number;
   scaleMeasurePoints: Array<{ x: number; y: number }>;
+  distanceMeasurePoints: Array<{ x: number; y: number }>;
   name: string;
   placements: Placement[];
 };
@@ -61,6 +62,8 @@ type CameraHead = {
 type DrawableHead = CameraHead & {
   rotationDeg: number;
 };
+
+const appVersion = "0.0.6";
 
 const cameraModelsCatalog: CameraModel[] = [
   {
@@ -630,6 +633,48 @@ function classifyRangeByZone(distanceFt: number, zones: Array<{ label: string; i
   return matchingZone?.label ?? "Below detection";
 }
 
+function isPointInPolygon(point: { x: number; y: number }, polygon: Array<{ x: number; y: number }>) {
+  let isInside = false;
+
+  for (let index = 0, previousIndex = polygon.length - 1; index < polygon.length; previousIndex = index++) {
+    const current = polygon[index];
+    const previous = polygon[previousIndex];
+    const crossesY = current.y > point.y !== previous.y > point.y;
+    const intersectionX = ((previous.x - current.x) * (point.y - current.y)) / (previous.y - current.y) + current.x;
+
+    if (crossesY && point.x < intersectionX) {
+      isInside = !isInside;
+    }
+  }
+
+  return isInside;
+}
+
+function buildConeBandPolygon(
+  x: number,
+  y: number,
+  innerRadius: number,
+  outerRadius: number,
+  centerAngleDeg: number,
+  horizontalFovDeg: number,
+) {
+  const baseAngle = toRadians(centerAngleDeg - 90);
+  const halfSpan = toRadians(Math.min(horizontalFovDeg, 170) / 2);
+  const leftAngle = baseAngle - halfSpan;
+  const rightAngle = baseAngle + halfSpan;
+  const outerLeft = { x: x + Math.cos(leftAngle) * outerRadius, y: y + Math.sin(leftAngle) * outerRadius };
+  const outerRight = { x: x + Math.cos(rightAngle) * outerRadius, y: y + Math.sin(rightAngle) * outerRadius };
+
+  if (innerRadius <= 0.5) {
+    return [{ x, y }, outerLeft, outerRight];
+  }
+
+  const innerLeft = { x: x + Math.cos(leftAngle) * innerRadius, y: y + Math.sin(leftAngle) * innerRadius };
+  const innerRight = { x: x + Math.cos(rightAngle) * innerRadius, y: y + Math.sin(rightAngle) * innerRadius };
+
+  return [innerLeft, outerLeft, outerRight, innerRight];
+}
+
 function getHorizontalFov(model: CameraModel, lensMm: number) {
   const modelFov = modelFovSpecs[model.id];
 
@@ -1012,6 +1057,7 @@ function createEmptyMapSlot(index: number): MapSlot {
     widthFt: 160,
     scaleMeasureFeet: 6,
     scaleMeasurePoints: [],
+    distanceMeasurePoints: [],
     name: `Floor ${index + 1}`,
     placements: [],
   };
@@ -1038,6 +1084,8 @@ function getHoverReadout(
   const dxPx = (hoverPoint.x - placement.x) * stageSize.width;
   const dyPx = (hoverPoint.y - placement.y) * stageSize.height;
   const distanceFt = Math.hypot(dxPx, dyPx) * feetPerPixel;
+  const pointPx = { x: hoverPoint.x * stageSize.width, y: hoverPoint.y * stageSize.height };
+  const originPx = { x: placement.x * stageSize.width, y: placement.y * stageSize.height };
   const heads = getDrawableHeads(placement, model);
   const matchingHeads = heads
     .map((head) => {
@@ -1072,12 +1120,27 @@ function getHoverReadout(
         : distanceFt >= groundFootprint.nearFt &&
           distanceFt <= groundFootprint.farFt &&
           Math.abs(((toDegrees(Math.atan2(dyPx, dxPx)) - (head.rotationDeg - 90) + 540) % 360) - 180) <= horizontalFovDeg / 2;
+      const polygonZone = !isFisheyeModel(model) && tiltDeg > 2 && horizontalFovDeg < 150
+        ? [...zones].reverse().find((zone) =>
+            isPointInPolygon(
+              pointPx,
+              buildConeBandPolygon(
+                originPx.x,
+                originPx.y,
+                zone.innerRadiusFt / Math.max(feetPerPixel, 0.001),
+                zone.radiusFt / Math.max(feetPerPixel, 0.001),
+                head.rotationDeg,
+                horizontalFovDeg,
+              ),
+            ),
+          )
+        : null;
 
       return {
         head,
         distanceFt,
         pixelsPerFoot,
-        recognitionType: classifyRangeByZone(distanceFt, zones),
+        recognitionType: polygonZone?.label ?? classifyRangeByZone(distanceFt, zones),
         insideFov,
       };
     })
@@ -1097,6 +1160,7 @@ export default function CameraDesignerClient() {
   const [stageSize, setStageSize] = useState<StageSize>({ width: 0, height: 0 });
   const [draggingPlacementId, setDraggingPlacementId] = useState<string | null>(null);
   const [isMeasuringScale, setIsMeasuringScale] = useState(false);
+  const [isMeasuringDistance, setIsMeasuringDistance] = useState(false);
   const [hoverPoint, setHoverPoint] = useState<{ x: number; y: number } | null>(null);
 
   const stageRef = useRef<HTMLDivElement | null>(null);
@@ -1111,6 +1175,7 @@ export default function CameraDesignerClient() {
   const mapWidthFt = activeMap.widthFt;
   const scaleMeasureFeet = activeMap.scaleMeasureFeet;
   const scaleMeasurePoints = activeMap.scaleMeasurePoints;
+  const distanceMeasurePoints = activeMap.distanceMeasurePoints;
   const mapName = activeMap.name;
   const placements = activeMap.placements;
   const hasAnyPlacements = maps.some((map) => map.placements.length > 0);
@@ -1120,6 +1185,7 @@ export default function CameraDesignerClient() {
     setActiveMapIndex(index);
     setSelectedPlacementId(null);
     setIsMeasuringScale(false);
+    setIsMeasuringDistance(false);
   }
 
   function addFloor() {
@@ -1263,6 +1329,26 @@ export default function CameraDesignerClient() {
     return scaleMeasureFeetPerPixel * stageSize.width;
   }, [scaleMeasureFeetPerPixel, stageSize.width]);
 
+  const distanceMeasureDistancePx = useMemo(() => {
+    if (distanceMeasurePoints.length < 2 || stageSize.width <= 0 || stageSize.height <= 0) {
+      return null;
+    }
+
+    const [startPoint, endPoint] = distanceMeasurePoints;
+    const dx = (endPoint.x - startPoint.x) * stageSize.width;
+    const dy = (endPoint.y - startPoint.y) * stageSize.height;
+
+    return Math.hypot(dx, dy);
+  }, [distanceMeasurePoints, stageSize.height, stageSize.width]);
+
+  const distanceMeasureDistanceFt = useMemo(() => {
+    if (!distanceMeasureDistancePx || stageSize.width <= 0) {
+      return null;
+    }
+
+    return distanceMeasureDistancePx * (mapWidthFt / stageSize.width);
+  }, [distanceMeasureDistancePx, mapWidthFt, stageSize.width]);
+
   const inspectedStats = useMemo(() => {
     if (!selectedPlacement || !selectedModel) return null;
 
@@ -1315,8 +1401,13 @@ export default function CameraDesignerClient() {
     updateActiveMap((map) => ({ ...map, scaleMeasurePoints: [] }));
   }
 
+  function clearDistanceMeasurement() {
+    setIsMeasuringDistance(false);
+    updateActiveMap((map) => ({ ...map, distanceMeasurePoints: [] }));
+  }
+
   function handleStageClick(event: React.MouseEvent<HTMLDivElement>) {
-    if (!isMeasuringScale) {
+    if (!isMeasuringScale && !isMeasuringDistance) {
       return;
     }
 
@@ -1326,6 +1417,29 @@ export default function CameraDesignerClient() {
       x: clamp((event.clientX - rect.left) / rect.width, 0.03, 0.97),
       y: clamp((event.clientY - rect.top) / rect.height, 0.03, 0.97),
     };
+
+    if (isMeasuringDistance) {
+      setMaps((currentMaps) =>
+        currentMaps.map((map, index) => {
+          if (index !== measuringMapIndex) {
+            return map;
+          }
+
+          const nextPoints = map.distanceMeasurePoints.length >= 2 ? [point] : [...map.distanceMeasurePoints, point];
+
+          return {
+            ...map,
+            distanceMeasurePoints: nextPoints,
+          };
+        }),
+      );
+
+      if (distanceMeasurePoints.length === 1) {
+        setIsMeasuringDistance(false);
+      }
+
+      return;
+    }
 
     setMaps((currentMaps) =>
       currentMaps.map((map, index) => {
@@ -1547,8 +1661,13 @@ export default function CameraDesignerClient() {
         <section className="rounded-[2rem] border border-white/10 bg-white/5 px-6 py-5 shadow-[0_30px_80px_rgba(0,0,0,0.35)] backdrop-blur-xl">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl space-y-4">
-              <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.24em] text-cyan-200">
-                OpenEye / OWS site designer
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.24em] text-cyan-200">
+                  OpenEye / OWS site designer
+                </div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-slate-950/60 px-3 py-1 text-xs font-medium uppercase tracking-[0.24em] text-slate-300">
+                  Version {appVersion}
+                </div>
               </div>
               <div className="space-y-3">
                 <h1 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl">
@@ -1738,7 +1857,7 @@ export default function CameraDesignerClient() {
 
           <section className="flex min-w-0 flex-col gap-4">
             <div className="rounded-[2rem] border border-white/10 bg-slate-950/70 p-4 shadow-[0_24px_60px_rgba(0,0,0,0.3)] backdrop-blur-xl">
-              <div className="grid gap-3 md:grid-cols-3">
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                 <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-4">
                   <span className="text-xs uppercase tracking-[0.22em] text-slate-500">Active camera</span>
                   <div className="mt-2 text-sm font-semibold text-white">{activeCameraLabel}</div>
@@ -1765,6 +1884,7 @@ export default function CameraDesignerClient() {
                       type="button"
                       onClick={() => {
                         setIsMeasuringScale((currentValue) => !currentValue);
+                        setIsMeasuringDistance(false);
                         updateActiveMap((map) => ({ ...map, scaleMeasurePoints: [] }));
                       }}
                       className={`rounded-2xl border px-3 py-2 text-xs font-medium transition ${
@@ -1809,6 +1929,45 @@ export default function CameraDesignerClient() {
                         : `${formatNumber(scaleMeasureDistancePx ?? 0, 1)} px selected`}
                     </span>
                     <span>{scaleMeasureMapWidthFt ? `${formatNumber(scaleMeasureMapWidthFt)} ft map width` : "No measurement yet"}</span>
+                  </div>
+                </label>
+
+                <label className="rounded-3xl border border-white/10 bg-white/[0.03] p-4">
+                  <span className="text-xs uppercase tracking-[0.22em] text-slate-500">Measure distance</span>
+                  <div className="mt-2 text-sm font-semibold text-white">
+                    {distanceMeasureDistanceFt ? `${formatNumber(distanceMeasureDistanceFt)} ft` : "No distance selected"}
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMeasuringDistance((currentValue) => !currentValue);
+                        setIsMeasuringScale(false);
+                        updateActiveMap((map) => ({ ...map, distanceMeasurePoints: [] }));
+                      }}
+                      className={`rounded-2xl border px-3 py-2 text-xs font-medium transition ${
+                        isMeasuringDistance
+                          ? "border-violet-300/50 bg-violet-400/20 text-violet-50"
+                          : "border-white/10 bg-slate-900/70 text-slate-200 hover:border-violet-300/40 hover:bg-violet-400/10"
+                      }`}
+                    >
+                      {isMeasuringDistance ? "Measuring distance" : "Measure distance"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={clearDistanceMeasurement}
+                      className="rounded-2xl border border-white/10 bg-slate-900/70 px-3 py-2 text-xs font-medium text-slate-200 transition hover:border-violet-300/40 hover:bg-violet-400/10"
+                    >
+                      Clear measure
+                    </button>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between gap-3 text-xs text-slate-400">
+                    <span>
+                      {distanceMeasurePoints.length < 2
+                        ? "Click two points on the map"
+                        : `${formatNumber(distanceMeasureDistancePx ?? 0, 1)} px selected`}
+                    </span>
+                    <span>{distanceMeasureDistanceFt ? `${formatNumber(distanceMeasureDistanceFt)} ft` : "Uses current scale"}</span>
                   </div>
                 </label>
               </div>
@@ -1883,6 +2042,63 @@ export default function CameraDesignerClient() {
                           y={point.y * stageSize.height + 5}
                           textAnchor="middle"
                           className="fill-cyan-100 text-[12px] font-semibold"
+                        >
+                          {index + 1}
+                        </text>
+                      </g>
+                    ))}
+                  </svg>
+                ) : null}
+
+                {distanceMeasurePoints.length > 0 ? (
+                  <svg className="pointer-events-none absolute inset-0 h-full w-full overflow-hidden">
+                    {distanceMeasurePoints.length === 2 ? (
+                      <>
+                        <line
+                          x1={distanceMeasurePoints[0].x * stageSize.width}
+                          y1={distanceMeasurePoints[0].y * stageSize.height}
+                          x2={distanceMeasurePoints[1].x * stageSize.width}
+                          y2={distanceMeasurePoints[1].y * stageSize.height}
+                          stroke="rgba(167,139,250,0.95)"
+                          strokeDasharray="8 7"
+                          strokeWidth="3"
+                        />
+                        <g
+                          transform={`translate(${((distanceMeasurePoints[0].x + distanceMeasurePoints[1].x) / 2) * stageSize.width} ${
+                            ((distanceMeasurePoints[0].y + distanceMeasurePoints[1].y) / 2) * stageSize.height
+                          })`}
+                        >
+                          <rect
+                            x="-45"
+                            y="-16"
+                            width="90"
+                            height="32"
+                            rx="16"
+                            fill="rgba(15,23,42,0.92)"
+                            stroke="rgba(167,139,250,0.75)"
+                            strokeWidth="1"
+                          />
+                          <text textAnchor="middle" y="5" className="fill-violet-50 text-[12px] font-semibold">
+                            {distanceMeasureDistanceFt ? `${formatNumber(distanceMeasureDistanceFt)} ft` : "Measuring"}
+                          </text>
+                        </g>
+                      </>
+                    ) : null}
+                    {distanceMeasurePoints.map((point, index) => (
+                      <g key={`distance-${point.x}-${point.y}-${index}`}>
+                        <circle
+                          cx={point.x * stageSize.width}
+                          cy={point.y * stageSize.height}
+                          r="11"
+                          fill="rgba(8,15,33,0.95)"
+                          stroke="rgba(167,139,250,0.95)"
+                          strokeWidth="3"
+                        />
+                        <text
+                          x={point.x * stageSize.width}
+                          y={point.y * stageSize.height + 5}
+                          textAnchor="middle"
+                          className="fill-violet-100 text-[12px] font-semibold"
                         >
                           {index + 1}
                         </text>
@@ -2004,11 +2220,13 @@ export default function CameraDesignerClient() {
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="max-w-lg rounded-[2rem] border border-dashed border-white/15 bg-slate-950/80 px-6 py-8 text-center shadow-2xl backdrop-blur-md">
                       <div className="text-lg font-semibold text-white">
-                        {isMeasuringScale ? "Measure the map scale" : "Load your cameras first"}
+                        {isMeasuringScale ? "Measure the map scale" : isMeasuringDistance ? "Measure a distance" : "Load your cameras first"}
                       </div>
                       <p className="mt-2 text-sm leading-6 text-slate-400">
                         {isMeasuringScale
                           ? "Click two points on the map for a known wall or span, and the planner will update the map scale automatically."
+                          : isMeasuringDistance
+                            ? "Click two points on the map to measure that span using the current floor scale."
                           : "Pick a camera from the dropdown, then drag it onto the map. After placement, select the camera to set its mount height, lens, tilt, and rotation independently."}
                       </p>
                     </div>
