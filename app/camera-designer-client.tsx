@@ -1916,7 +1916,7 @@ export default function CameraDesignerClient() {
                     type="button"
                     onClick={exportAllCameraCounts}
                     disabled={!hasAnyPlacements}
-                    className="mt-2 w-full rounded-2xl border border-cyan-400/30 bg-cyan-400/10 px-3 py-2 text-sm font-medium text-cyan-50 transition hover:bg-cyan-400/20 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/[0.03] disabled:text-slate-500"
+                    className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-900/80 px-3 py-2 text-sm font-medium text-slate-200 transition hover:border-cyan-400/40 hover:bg-slate-900 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/[0.03] disabled:text-slate-500"
                   >
                     Export all floors
                   </button>
