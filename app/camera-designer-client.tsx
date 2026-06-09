@@ -44,6 +44,8 @@ type MapSlot = {
   url: string | null;
   aspect: number;
   widthFt: number;
+  scaleMeasureFeet: number;
+  scaleMeasurePoints: Array<{ x: number; y: number }>;
   name: string;
   placements: Placement[];
 };
@@ -971,6 +973,8 @@ function createEmptyMapSlot(index: number): MapSlot {
     url: null,
     aspect: 16 / 10,
     widthFt: 160,
+    scaleMeasureFeet: 6,
+    scaleMeasurePoints: [],
     name: `Floor ${index + 1}`,
     placements: [],
   };
@@ -1039,8 +1043,6 @@ export default function CameraDesignerClient() {
   const [stageSize, setStageSize] = useState<StageSize>({ width: 0, height: 0 });
   const [draggingPlacementId, setDraggingPlacementId] = useState<string | null>(null);
   const [isMeasuringScale, setIsMeasuringScale] = useState(false);
-  const [scaleMeasurePoints, setScaleMeasurePoints] = useState<Array<{ x: number; y: number }>>([]);
-  const [scaleMeasureFeet, setScaleMeasureFeet] = useState(6);
   const [hoverPoint, setHoverPoint] = useState<{ x: number; y: number } | null>(null);
 
   const stageRef = useRef<HTMLDivElement | null>(null);
@@ -1052,6 +1054,8 @@ export default function CameraDesignerClient() {
   const mapUrl = activeMap.url;
   const mapAspect = activeMap.aspect;
   const mapWidthFt = activeMap.widthFt;
+  const scaleMeasureFeet = activeMap.scaleMeasureFeet;
+  const scaleMeasurePoints = activeMap.scaleMeasurePoints;
   const mapName = activeMap.name;
   const placements = activeMap.placements;
   const hasAnyPlacements = maps.some((map) => map.placements.length > 0);
@@ -1059,7 +1063,6 @@ export default function CameraDesignerClient() {
   function selectFloor(index: number) {
     setActiveMapIndex(index);
     setSelectedPlacementId(null);
-    setScaleMeasurePoints([]);
     setIsMeasuringScale(false);
   }
 
@@ -1070,8 +1073,12 @@ export default function CameraDesignerClient() {
     selectFloor(nextIndex);
   }
 
+  function updateMapAt(mapIndex: number, updater: (map: MapSlot) => MapSlot) {
+    setMaps((currentMaps) => currentMaps.map((map, index) => (index === mapIndex ? updater(map) : map)));
+  }
+
   function updateActiveMap(updater: (map: MapSlot) => MapSlot) {
-    setMaps((currentMaps) => currentMaps.map((map, index) => (index === activeMapIndex ? updater(map) : map)));
+    updateMapAt(activeMapIndex, updater);
   }
 
   function updateActivePlacements(updater: (placements: Placement[]) => Placement[]) {
@@ -1245,7 +1252,7 @@ export default function CameraDesignerClient() {
 
   function clearScaleMeasurement() {
     setIsMeasuringScale(false);
-    setScaleMeasurePoints([]);
+    updateActiveMap((map) => ({ ...map, scaleMeasurePoints: [] }));
   }
 
   function handleStageClick(event: React.MouseEvent<HTMLDivElement>) {
@@ -1253,30 +1260,46 @@ export default function CameraDesignerClient() {
       return;
     }
 
+    const measuringMapIndex = activeMapIndex;
     const rect = event.currentTarget.getBoundingClientRect();
     const point = {
       x: clamp((event.clientX - rect.left) / rect.width, 0.03, 0.97),
       y: clamp((event.clientY - rect.top) / rect.height, 0.03, 0.97),
     };
 
-    setScaleMeasurePoints((currentPoints) => {
-      const nextPoints = currentPoints.length >= 2 ? [point] : [...currentPoints, point];
-
-      if (nextPoints.length === 2) {
-        const [startPoint, endPoint] = nextPoints;
-        const dx = (endPoint.x - startPoint.x) * stageSize.width;
-        const dy = (endPoint.y - startPoint.y) * stageSize.height;
-        const distancePx = Math.hypot(dx, dy);
-
-        if (distancePx > 0 && scaleMeasureFeet > 0) {
-          updateActiveMap((map) => ({ ...map, widthFt: (scaleMeasureFeet / distancePx) * stageSize.width }));
+    setMaps((currentMaps) =>
+      currentMaps.map((map, index) => {
+        if (index !== measuringMapIndex) {
+          return map;
         }
 
-        setIsMeasuringScale(false);
-      }
+        const nextPoints = map.scaleMeasurePoints.length >= 2 ? [point] : [...map.scaleMeasurePoints, point];
 
-      return nextPoints;
-    });
+        if (nextPoints.length === 2) {
+          const [startPoint, endPoint] = nextPoints;
+          const dx = (endPoint.x - startPoint.x) * stageSize.width;
+          const dy = (endPoint.y - startPoint.y) * stageSize.height;
+          const distancePx = Math.hypot(dx, dy);
+
+          if (distancePx > 0 && map.scaleMeasureFeet > 0) {
+            return {
+              ...map,
+              scaleMeasurePoints: nextPoints,
+              widthFt: (map.scaleMeasureFeet / distancePx) * stageSize.width,
+            };
+          }
+        }
+
+        return {
+          ...map,
+          scaleMeasurePoints: nextPoints,
+        };
+      }),
+    );
+
+    if (scaleMeasurePoints.length === 1) {
+      setIsMeasuringScale(false);
+    }
   }
 
   function handleStageMouseMove(event: React.MouseEvent<HTMLDivElement>) {
@@ -1682,7 +1705,7 @@ export default function CameraDesignerClient() {
                       type="button"
                       onClick={() => {
                         setIsMeasuringScale((currentValue) => !currentValue);
-                        setScaleMeasurePoints([]);
+                        updateActiveMap((map) => ({ ...map, scaleMeasurePoints: [] }));
                       }}
                       className={`rounded-2xl border px-3 py-2 text-xs font-medium transition ${
                         isMeasuringScale
@@ -1708,7 +1731,12 @@ export default function CameraDesignerClient() {
                         min={0.1}
                         step={0.1}
                         value={scaleMeasureFeet}
-                        onChange={(event) => setScaleMeasureFeet(Number(event.target.value))}
+                        onChange={(event) =>
+                          updateActiveMap((map) => ({
+                            ...map,
+                            scaleMeasureFeet: Number(event.target.value),
+                          }))
+                        }
                         className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-3 py-2 text-sm text-white outline-none transition focus:border-cyan-400/50"
                       />
                       <span className="text-sm text-slate-400">ft</span>
@@ -1756,7 +1784,7 @@ export default function CameraDesignerClient() {
                     onLoad={(event) => {
                       const image = event.currentTarget;
                       if (image.naturalHeight > 0) {
-                        updateActiveMap((map) => ({ ...map, aspect: image.naturalWidth / image.naturalHeight }));
+                        updateMapAt(activeMapIndex, (map) => ({ ...map, aspect: image.naturalWidth / image.naturalHeight }));
                       }
                     }}
                   />
