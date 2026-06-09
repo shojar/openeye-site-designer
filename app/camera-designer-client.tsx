@@ -624,10 +624,10 @@ function classifyPixelsPerFoot(ppf: number) {
   return "Below detection";
 }
 
-function classifyRangeByZone(distanceFt: number, zones: Array<{ label: string; radiusFt: number }>) {
-  const containingZones = zones.filter((zone) => distanceFt <= zone.radiusFt);
+function classifyRangeByZone(distanceFt: number, zones: Array<{ label: string; innerRadiusFt: number; radiusFt: number }>) {
+  const matchingZone = zones.find((zone) => distanceFt >= zone.innerRadiusFt && distanceFt <= zone.radiusFt);
 
-  return containingZones.at(-1)?.label ?? "Below detection";
+  return matchingZone?.label ?? "Below detection";
 }
 
 function getHorizontalFov(model: CameraModel, lensMm: number) {
@@ -769,14 +769,27 @@ function buildCameraStats(
       ? getFisheyeRadiusFt(model, band.ppf)
       : getThresholdGroundDistanceFt(model, horizontalFovDeg, band.ppf, placement.mountHeightFt);
     const radiusFt = isFisheyeModel(model) ? ppfRangeFt : Math.min(ppfRangeFt, groundFootprint.farFt);
+    const nextBand = recognitionBands.find((candidate) => candidate.ppf > band.ppf);
+    const nextPpfRangeFt = nextBand
+      ? isFisheyeModel(model)
+        ? getFisheyeRadiusFt(model, nextBand.ppf)
+        : getThresholdGroundDistanceFt(model, horizontalFovDeg, nextBand.ppf, placement.mountHeightFt)
+      : groundFootprint.nearFt;
+    const innerRadiusFt = nextBand ? Math.min(nextPpfRangeFt, radiusFt) : groundFootprint.nearFt;
 
     return {
       ...band,
+      innerRadiusFt,
       radiusFt,
       ppfRangeFt,
       radiusPx: radiusFt / Math.max(feetPerPixel, 0.001),
       pathD: isFisheyeModel(model)
-        ? buildCirclePath(placement.x * stageSize.width, placement.y * stageSize.height, radiusFt / Math.max(feetPerPixel, 0.001))
+        ? buildCircleBandPath(
+            placement.x * stageSize.width,
+            placement.y * stageSize.height,
+            innerRadiusFt / Math.max(feetPerPixel, 0.001),
+            radiusFt / Math.max(feetPerPixel, 0.001),
+          )
         : buildStableFovPath({
             placement,
             stageSize,
@@ -785,7 +798,7 @@ function buildCameraStats(
             verticalFovDeg,
             tiltDeg,
             rotationDeg: head.rotationDeg,
-            minRangeFt: groundFootprint.nearFt,
+            minRangeFt: innerRadiusFt,
             maxRangeFt: radiusFt,
             opticalRangeFt: groundFootprint.farFt,
           }),
@@ -973,6 +986,24 @@ function buildCirclePath(x: number, y: number, radius: number) {
   ].join(" ");
 }
 
+function buildCircleBandPath(x: number, y: number, innerRadius: number, outerRadius: number) {
+  if (outerRadius <= innerRadius + 0.5) return "";
+
+  if (innerRadius <= 0.5) {
+    return buildCirclePath(x, y, outerRadius);
+  }
+
+  return [
+    `M ${x - outerRadius} ${y}`,
+    `A ${outerRadius} ${outerRadius} 0 1 0 ${x + outerRadius} ${y}`,
+    `A ${outerRadius} ${outerRadius} 0 1 0 ${x - outerRadius} ${y}`,
+    `M ${x - innerRadius} ${y}`,
+    `A ${innerRadius} ${innerRadius} 0 1 1 ${x + innerRadius} ${y}`,
+    `A ${innerRadius} ${innerRadius} 0 1 1 ${x - innerRadius} ${y}`,
+    "Z",
+  ].join(" ");
+}
+
 function createEmptyMapSlot(index: number): MapSlot {
   return {
     file: null,
@@ -1023,9 +1054,16 @@ function getHoverReadout(
         const radiusFt = isFisheyeModel(model)
           ? getFisheyeRadiusFt(model, band.ppf)
           : Math.min(getThresholdGroundDistanceFt(model, horizontalFovDeg, band.ppf, placement.mountHeightFt), groundFootprint.farFt);
+        const nextBand = recognitionBands.find((candidate) => candidate.ppf > band.ppf);
+        const nextRadiusFt = nextBand
+          ? isFisheyeModel(model)
+            ? getFisheyeRadiusFt(model, nextBand.ppf)
+            : Math.min(getThresholdGroundDistanceFt(model, horizontalFovDeg, nextBand.ppf, placement.mountHeightFt), radiusFt)
+          : groundFootprint.nearFt;
 
         return {
           label: band.label,
+          innerRadiusFt: nextBand ? Math.min(nextRadiusFt, radiusFt) : groundFootprint.nearFt,
           radiusFt,
         };
       });
