@@ -1693,9 +1693,9 @@ export default function CameraDesignerClient() {
   return (
     <main className="min-h-screen overflow-hidden bg-[rgb(37,150,190)] text-slate-50">
       <div className="mx-auto flex min-h-screen w-full max-w-[1800px] flex-col gap-6 px-4 py-4 sm:px-6 lg:px-8">
-        <section className="rounded-[2rem] border border-white/10 bg-white/5 px-6 py-5 shadow-[0_30px_80px_rgba(0,0,0,0.35)] backdrop-blur-xl">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-3xl space-y-4">
+        <section className="rounded-[2rem] border border-white/10 bg-slate-950/70 px-5 py-4 shadow-[0_30px_80px_rgba(0,0,0,0.35)] backdrop-blur-xl">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="max-w-4xl space-y-3">
               <div className="flex flex-wrap items-center gap-2">
                 <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.24em] text-cyan-200">
                   OpenEye / OWS site designer
@@ -1717,15 +1717,15 @@ export default function CameraDesignerClient() {
               </div>
             </div>
 
-            <div className="grid gap-3 lg:min-w-[220px]">
-              <div className="rounded-[1.5rem] border border-white/10 bg-white p-3 shadow-[0_12px_40px_rgba(0,0,0,0.15)]">
+            <div className="grid gap-2 lg:w-40 lg:min-w-40">
+              <div className="justify-self-end rounded-2xl border border-white/10 bg-white/5 p-2 shadow-[0_12px_40px_rgba(0,0,0,0.15)]">
                 <Image
                   src="/openeye-logo.svg"
                   alt="OpenEye"
-                  width={220}
-                  height={128}
+                  width={128}
+                  height={74}
                   priority
-                  className="h-auto w-full"
+                  className="h-auto w-28"
                 />
               </div>
               <MetricCard label="Placed cameras" value={`${placements.length}`} helper="Library items on the map" />
@@ -2055,7 +2055,7 @@ export default function CameraDesignerClient() {
                   />
                 ) : (
                   <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-[radial-gradient(circle_at_50%_35%,rgba(34,211,238,0.18),transparent_24%),linear-gradient(135deg,rgba(15,23,42,0.95),rgba(3,7,18,0.98))] p-8">
-                    <div className="w-full max-w-xl rounded-[1.5rem] border border-white/10 bg-white p-6 shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
+                    <div className="w-full max-w-xl rounded-[1.5rem] border border-white/10 bg-white/5 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
                       <Image
                         src="/openeye-logo.svg"
                         alt="OpenEye"
