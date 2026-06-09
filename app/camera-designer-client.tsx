@@ -1248,15 +1248,6 @@ export default function CameraDesignerClient() {
     setScaleMeasurePoints([]);
   }
 
-  function applyScaleMeasurement() {
-    if (!scaleMeasureMapWidthFt || scaleMeasureFeet <= 0) {
-      return;
-    }
-
-    updateActiveMap((map) => ({ ...map, widthFt: scaleMeasureMapWidthFt }));
-    clearScaleMeasurement();
-  }
-
   function handleStageClick(event: React.MouseEvent<HTMLDivElement>) {
     if (!isMeasuringScale) {
       return;
@@ -1489,7 +1480,7 @@ export default function CameraDesignerClient() {
 
             <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[360px]">
               <MetricCard label="Placed cameras" value={`${placements.length}`} helper="Library items on the map" />
-              <MetricCard label="Map scale" value={`${formatNumber(mapWidthFt)} ft`} helper="Across the visible map width" />
+              <MetricCard label="Map scale" value={`${formatNumber(mapWidthFt)} ft`} helper="This floor's measured map width" />
             </div>
           </div>
         </section>
@@ -1664,23 +1655,7 @@ export default function CameraDesignerClient() {
 
           <section className="flex min-w-0 flex-col gap-4">
             <div className="rounded-[2rem] border border-white/10 bg-slate-950/70 p-4 shadow-[0_24px_60px_rgba(0,0,0,0.3)] backdrop-blur-xl">
-              <div className="grid gap-3 md:grid-cols-4">
-                <label className="rounded-3xl border border-white/10 bg-white/[0.03] p-4">
-                  <span className="text-xs uppercase tracking-[0.22em] text-slate-500">Visible map width</span>
-                  <div className="mt-2 flex items-center gap-3">
-                    <input
-                      type="range"
-                      min={40}
-                      max={600}
-                      step={1}
-                      value={mapWidthFt}
-                      onChange={(event) => updateActiveMap((map) => ({ ...map, widthFt: Number(event.target.value) }))}
-                      className="h-2 w-full accent-cyan-400"
-                    />
-                    <span className="min-w-16 text-right text-sm font-semibold text-white">{formatNumber(mapWidthFt)} ft</span>
-                  </div>
-                </label>
-
+              <div className="grid gap-3 md:grid-cols-3">
                 <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-4">
                   <span className="text-xs uppercase tracking-[0.22em] text-slate-500">Active camera</span>
                   <div className="mt-2 text-sm font-semibold text-white">{activeCameraLabel}</div>
@@ -1701,6 +1676,7 @@ export default function CameraDesignerClient() {
 
                 <label className="rounded-3xl border border-white/10 bg-white/[0.03] p-4">
                   <span className="text-xs uppercase tracking-[0.22em] text-slate-500">Scale calibration</span>
+                  <div className="mt-2 text-sm font-semibold text-white">{formatNumber(mapWidthFt)} ft map width</div>
                   <div className="mt-2 flex flex-wrap gap-2">
                     <button
                       type="button"
@@ -1746,14 +1722,6 @@ export default function CameraDesignerClient() {
                     </span>
                     <span>{scaleMeasureMapWidthFt ? `${formatNumber(scaleMeasureMapWidthFt)} ft map width` : "No measurement yet"}</span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={applyScaleMeasurement}
-                    disabled={!scaleMeasureMapWidthFt}
-                    className="mt-3 w-full rounded-2xl border border-cyan-400/30 bg-cyan-400/10 px-3 py-2 text-sm font-medium text-cyan-50 transition hover:bg-cyan-400/20 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/[0.03] disabled:text-slate-500"
-                  >
-                    Apply measured scale
-                  </button>
                 </label>
               </div>
             </div>
@@ -1965,7 +1933,7 @@ export default function CameraDesignerClient() {
               <StatPanel
                 label="Current scale"
                 value={`${formatNumber(stageSize.width > 0 ? mapWidthFt / stageSize.width : 0, 2)} ft/px`}
-                helper="Based on the visible map width"
+                helper="Based on this floor's two-point scale"
               />
               <StatPanel
                 label="Active floor"
