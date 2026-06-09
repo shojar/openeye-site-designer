@@ -1691,7 +1691,7 @@ export default function CameraDesignerClient() {
   }
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(17,94,89,0.28),_transparent_34%),linear-gradient(180deg,_#07111f_0%,_#050814_100%)] text-slate-50">
+    <main className="min-h-screen overflow-hidden bg-[rgb(37,150,190)] text-slate-50">
       <div className="mx-auto flex min-h-screen w-full max-w-[1800px] flex-col gap-6 px-4 py-4 sm:px-6 lg:px-8">
         <section className="rounded-[2rem] border border-white/10 bg-white/5 px-6 py-5 shadow-[0_30px_80px_rgba(0,0,0,0.35)] backdrop-blur-xl">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -1703,19 +1703,31 @@ export default function CameraDesignerClient() {
                 <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-slate-950/60 px-3 py-1 text-xs font-medium uppercase tracking-[0.24em] text-slate-300">
                   Version {appVersion}
                 </div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-rose-300/50 bg-rose-500/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-rose-50">
+                  NOT FOR EXTERNAL USE
+                </div>
               </div>
               <div className="space-y-3">
                 <h1 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-                  Import a map, then set the scale using two known points. Select and then drag them onto the map and tune lens, height, and coverage
+                  OpenEye Site Designer
                 </h1>
                 <p className="max-w-3xl text-sm leading-6 text-slate-300 sm:text-base">
-                  Build a field-ready layout with varifocal coverage cones, DORI-style pixels-per-foot analysis,
-                  mounting height control, and a map scale that keeps placements and recognition targets honest.
+                  Import a map, then set the scale using two known points. Select and then drag them onto the map and tune lens, height, and coverage.
                 </p>
               </div>
             </div>
 
-            <div className="grid gap-3 lg:min-w-[180px]">
+            <div className="grid gap-3 lg:min-w-[220px]">
+              <div className="rounded-[1.5rem] border border-white/10 bg-white p-3 shadow-[0_12px_40px_rgba(0,0,0,0.15)]">
+                <Image
+                  src="/openeye-logo.svg"
+                  alt="OpenEye"
+                  width={220}
+                  height={128}
+                  priority
+                  className="h-auto w-full"
+                />
+              </div>
               <MetricCard label="Placed cameras" value={`${placements.length}`} helper="Library items on the map" />
             </div>
           </div>
@@ -2042,7 +2054,18 @@ export default function CameraDesignerClient() {
                     }}
                   />
                 ) : (
-                  <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_50%_35%,rgba(34,211,238,0.18),transparent_24%),linear-gradient(135deg,rgba(15,23,42,0.95),rgba(3,7,18,0.98))]" />
+                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-[radial-gradient(circle_at_50%_35%,rgba(34,211,238,0.18),transparent_24%),linear-gradient(135deg,rgba(15,23,42,0.95),rgba(3,7,18,0.98))] p-8">
+                    <div className="w-full max-w-xl rounded-[1.5rem] border border-white/10 bg-white p-6 shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
+                      <Image
+                        src="/openeye-logo.svg"
+                        alt="OpenEye"
+                        width={520}
+                        height={301}
+                        priority
+                        className="h-auto w-full"
+                      />
+                    </div>
+                  </div>
                 )}
 
                 <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:48px_48px] opacity-40" />
