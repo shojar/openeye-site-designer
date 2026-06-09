@@ -64,7 +64,7 @@ type DrawableHead = CameraHead & {
   rotationDeg: number;
 };
 
-const appVersion = "0.0.7";
+const appVersion = "0.0.8";
 
 const cameraModelsCatalog: CameraModel[] = [
   {
@@ -2250,20 +2250,6 @@ export default function CameraDesignerClient() {
                   );
                 })}
 
-                {placements.length === 0 && (isMeasuringScale || isMeasuringDistance) ? (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="max-w-lg rounded-[2rem] border border-dashed border-white/15 bg-slate-950/80 px-6 py-8 text-center shadow-2xl backdrop-blur-md">
-                      <div className="text-lg font-semibold text-white">
-                        {isMeasuringScale ? "Measure the map scale" : "Measure a distance"}
-                      </div>
-                      <p className="mt-2 text-sm leading-6 text-slate-400">
-                        {isMeasuringScale
-                          ? "Click two points on the map for a known wall or span, and the planner will update the map scale automatically."
-                          : "Click two points on the map to measure that span using the current floor scale."}
-                      </p>
-                    </div>
-                  </div>
-                ) : null}
               </div>
             </div>
 
