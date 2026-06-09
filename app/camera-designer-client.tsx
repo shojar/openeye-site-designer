@@ -13,6 +13,7 @@ type CameraModel = {
   sensorHeightMm: number;
   resolutionWidth: number;
   resolutionHeight: number;
+  fisheyeUsablePixels?: number;
   lensMinMm: number;
   lensMaxMm: number;
   defaultLensMm: number;
@@ -292,6 +293,7 @@ const cameraModelsCatalog: CameraModel[] = [
     sensorHeightMm: 8.8,
     resolutionWidth: 4000,
     resolutionHeight: 3000,
+    fisheyeUsablePixels: 2976,
     lensMinMm: 1.95,
     lensMaxMm: 1.95,
     defaultLensMm: 1.95,
@@ -310,6 +312,7 @@ const cameraModelsCatalog: CameraModel[] = [
     sensorHeightMm: 8.8,
     resolutionWidth: 4000,
     resolutionHeight: 3000,
+    fisheyeUsablePixels: 2976,
     lensMinMm: 1.65,
     lensMaxMm: 1.65,
     defaultLensMm: 1.65,
@@ -818,18 +821,20 @@ function buildCameraStats(
   const aimDistanceFt = getTiltAimDistanceFt(placement.mountHeightFt, tiltDeg);
   const groundFootprint = getOpticalGroundFootprintFt(placement.mountHeightFt, verticalFovDeg, tiltDeg);
   const coverageWidthFt = isFisheyeModel(model)
-    ? getFisheyeRadiusFt(model, recognitionBands[0].ppf) * 2
+    ? getFisheyeRadiusFt(model, recognitionBands[0].ppf, placement.mountHeightFt) * 2
     : getCoverageWidthFt(Math.max(groundFootprint.aimFt, placement.mountHeightFt), horizontalFovDeg);
-  const pixelsPerFoot = model.resolutionWidth / Math.max(coverageWidthFt, 1);
+  const pixelsPerFoot = isFisheyeModel(model)
+    ? getFisheyePixelsPerFoot(model, placement.mountHeightFt, getFisheyeRadiusFt(model, targetPpf, placement.mountHeightFt))
+    : model.resolutionWidth / Math.max(coverageWidthFt, 1);
   const zoneBands = recognitionBands.map((band) => {
     const ppfRangeFt = isFisheyeModel(model)
-      ? getFisheyeRadiusFt(model, band.ppf)
+      ? getFisheyeRadiusFt(model, band.ppf, placement.mountHeightFt)
       : getThresholdGroundDistanceFt(model, horizontalFovDeg, band.ppf, placement.mountHeightFt);
     const radiusFt = isFisheyeModel(model) ? ppfRangeFt : Math.min(ppfRangeFt, groundFootprint.farFt);
     const nextBand = recognitionBands.find((candidate) => candidate.ppf > band.ppf);
     const nextPpfRangeFt = nextBand
       ? isFisheyeModel(model)
-        ? getFisheyeRadiusFt(model, nextBand.ppf)
+        ? getFisheyeRadiusFt(model, nextBand.ppf, placement.mountHeightFt)
         : getThresholdGroundDistanceFt(model, horizontalFovDeg, nextBand.ppf, placement.mountHeightFt)
       : groundFootprint.nearFt;
     const innerRadiusFt = nextBand ? Math.min(nextPpfRangeFt, radiusFt) : groundFootprint.nearFt;
@@ -861,7 +866,7 @@ function buildCameraStats(
           }),
     };
   });
-  const targetDistanceFt = zoneBands.find((band) => band.label === "Recognition")?.radiusFt ??
+  const targetDistanceFt = zoneBands.find((band) => band.ppf === targetPpf)?.radiusFt ??
     getThresholdGroundDistanceFt(model, horizontalFovDeg, targetPpf, placement.mountHeightFt);
   const coneRadiusFt = clamp(Math.max(aimDistanceFt, zoneBands[0]?.radiusFt ?? targetDistanceFt), 8, mapWidthFt * 1.5);
   const coneRadiusPx = coneRadiusFt / Math.max(feetPerPixel, 0.001);
@@ -881,8 +886,24 @@ function buildCameraStats(
   };
 }
 
-function getFisheyeRadiusFt(model: CameraModel, targetPpf: number) {
-  return model.resolutionWidth / Math.max(targetPpf * 2, 1);
+function getFisheyeUsablePixels(model: CameraModel) {
+  return model.fisheyeUsablePixels ?? Math.min(model.resolutionWidth, model.resolutionHeight);
+}
+
+function getFisheyePixelsPerFoot(model: CameraModel, mountHeightFt: number, floorDistanceFt: number) {
+  const usablePixels = getFisheyeUsablePixels(model);
+  const heightFt = Math.max(mountHeightFt, 0.1);
+  const distanceFt = Math.max(floorDistanceFt, 0);
+
+  return (usablePixels / Math.PI) * (heightFt / (heightFt ** 2 + distanceFt ** 2));
+}
+
+function getFisheyeRadiusFt(model: CameraModel, targetPpf: number, mountHeightFt: number) {
+  const usablePixels = getFisheyeUsablePixels(model);
+  const heightFt = Math.max(mountHeightFt, 0.1);
+  const radiusSquaredFt = (usablePixels * heightFt) / Math.max(Math.PI * targetPpf, 0.1) - heightFt ** 2;
+
+  return Math.sqrt(Math.max(radiusSquaredFt, 0));
 }
 
 function getTiltAimDistanceFt(heightFt: number, tiltDeg: number) {
@@ -1109,15 +1130,17 @@ function getHoverReadout(
       const coverageWidthFt = isFisheyeModel(model)
         ? Math.max(distanceFt * 2, 1)
         : getCoverageWidthFt(Math.max(slantDistanceFt, 0.1), horizontalFovDeg);
-      const pixelsPerFoot = model.resolutionWidth / Math.max(coverageWidthFt, 1);
+      const pixelsPerFoot = isFisheyeModel(model)
+        ? getFisheyePixelsPerFoot(model, placement.mountHeightFt, distanceFt)
+        : model.resolutionWidth / Math.max(coverageWidthFt, 1);
       const zones = recognitionBands.map((band) => {
         const radiusFt = isFisheyeModel(model)
-          ? getFisheyeRadiusFt(model, band.ppf)
+          ? getFisheyeRadiusFt(model, band.ppf, placement.mountHeightFt)
           : Math.min(getThresholdGroundDistanceFt(model, horizontalFovDeg, band.ppf, placement.mountHeightFt), groundFootprint.farFt);
         const nextBand = recognitionBands.find((candidate) => candidate.ppf > band.ppf);
         const nextRadiusFt = nextBand
           ? isFisheyeModel(model)
-            ? getFisheyeRadiusFt(model, nextBand.ppf)
+            ? getFisheyeRadiusFt(model, nextBand.ppf, placement.mountHeightFt)
             : Math.min(getThresholdGroundDistanceFt(model, horizontalFovDeg, nextBand.ppf, placement.mountHeightFt), radiusFt)
           : groundFootprint.nearFt;
 
@@ -1128,7 +1151,7 @@ function getHoverReadout(
         };
       });
       const insideFov = isFisheyeModel(model)
-        ? distanceFt <= getFisheyeRadiusFt(model, recognitionBands[0].ppf)
+        ? distanceFt <= getFisheyeRadiusFt(model, recognitionBands[0].ppf, placement.mountHeightFt)
         : distanceFt >= groundFootprint.nearFt &&
           distanceFt <= groundFootprint.farFt &&
           Math.abs(((toDegrees(Math.atan2(dyPx, dxPx)) - (head.rotationDeg - 90) + 540) % 360) - 180) <= horizontalFovDeg / 2;
@@ -2227,18 +2250,16 @@ export default function CameraDesignerClient() {
                   );
                 })}
 
-                {placements.length === 0 ? (
+                {placements.length === 0 && (isMeasuringScale || isMeasuringDistance) ? (
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="max-w-lg rounded-[2rem] border border-dashed border-white/15 bg-slate-950/80 px-6 py-8 text-center shadow-2xl backdrop-blur-md">
                       <div className="text-lg font-semibold text-white">
-                        {isMeasuringScale ? "Measure the map scale" : isMeasuringDistance ? "Measure a distance" : "Load your cameras first"}
+                        {isMeasuringScale ? "Measure the map scale" : "Measure a distance"}
                       </div>
                       <p className="mt-2 text-sm leading-6 text-slate-400">
                         {isMeasuringScale
                           ? "Click two points on the map for a known wall or span, and the planner will update the map scale automatically."
-                          : isMeasuringDistance
-                            ? "Click two points on the map to measure that span using the current floor scale."
-                          : "Pick a camera from the dropdown, then drag it onto the map. After placement, select the camera to set its mount height, lens, tilt, and rotation independently."}
+                          : "Click two points on the map to measure that span using the current floor scale."}
                       </p>
                     </div>
                   </div>
