@@ -1047,6 +1047,7 @@ export default function CameraDesignerClient() {
 
   const stageRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const activeMapIndexRef = useRef(activeMapIndex);
   const pendingImportMapIndexRef = useRef<number | null>(null);
   const mapUrlsRef = useRef<Array<string | null>>([]);
   const activeMap = maps[activeMapIndex] ?? maps[0];
@@ -1061,6 +1062,7 @@ export default function CameraDesignerClient() {
   const hasAnyPlacements = maps.some((map) => map.placements.length > 0);
 
   function selectFloor(index: number) {
+    activeMapIndexRef.current = index;
     setActiveMapIndex(index);
     setSelectedPlacementId(null);
     setIsMeasuringScale(false);
@@ -1078,12 +1080,16 @@ export default function CameraDesignerClient() {
   }
 
   function updateActiveMap(updater: (map: MapSlot) => MapSlot) {
-    updateMapAt(activeMapIndex, updater);
+    updateMapAt(activeMapIndexRef.current, updater);
   }
 
   function updateActivePlacements(updater: (placements: Placement[]) => Placement[]) {
     updateActiveMap((map) => ({ ...map, placements: updater(map.placements) }));
   }
+
+  useEffect(() => {
+    activeMapIndexRef.current = activeMapIndex;
+  }, [activeMapIndex]);
 
   useEffect(() => {
     mapUrlsRef.current = maps.map((map) => map.url);
@@ -1217,7 +1223,7 @@ export default function CameraDesignerClient() {
     return getHoverReadout(hoverPoint, selectedPlacement, selectedModel, stageSize, mapWidthFt);
   }, [hoverPoint, mapWidthFt, selectedModel, selectedPlacement, stageSize]);
 
-  function openMapImport(index = activeMapIndex) {
+  function openMapImport(index = activeMapIndexRef.current) {
     pendingImportMapIndexRef.current = index;
 
     if (fileInputRef.current) {
@@ -1227,7 +1233,7 @@ export default function CameraDesignerClient() {
   }
 
   function handleImportMap(file: File | null) {
-    const importMapIndex = pendingImportMapIndexRef.current ?? activeMapIndex;
+    const importMapIndex = pendingImportMapIndexRef.current ?? activeMapIndexRef.current;
     pendingImportMapIndexRef.current = null;
 
     setMaps((currentMaps) =>
@@ -1260,7 +1266,7 @@ export default function CameraDesignerClient() {
       return;
     }
 
-    const measuringMapIndex = activeMapIndex;
+    const measuringMapIndex = activeMapIndexRef.current;
     const rect = event.currentTarget.getBoundingClientRect();
     const point = {
       x: clamp((event.clientX - rect.left) / rect.width, 0.03, 0.97),
