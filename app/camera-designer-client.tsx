@@ -624,6 +624,12 @@ function classifyPixelsPerFoot(ppf: number) {
   return "Below detection";
 }
 
+function classifyRangeByZone(distanceFt: number, zones: Array<{ label: string; radiusFt: number }>) {
+  const containingZones = zones.filter((zone) => distanceFt <= zone.radiusFt);
+
+  return containingZones.at(-1)?.label ?? "Below detection";
+}
+
 function getHorizontalFov(model: CameraModel, lensMm: number) {
   const modelFov = modelFovSpecs[model.id];
 
@@ -1013,6 +1019,16 @@ function getHoverReadout(
         ? Math.max(distanceFt * 2, 1)
         : getCoverageWidthFt(Math.max(slantDistanceFt, 0.1), horizontalFovDeg);
       const pixelsPerFoot = model.resolutionWidth / Math.max(coverageWidthFt, 1);
+      const zones = recognitionBands.map((band) => {
+        const radiusFt = isFisheyeModel(model)
+          ? getFisheyeRadiusFt(model, band.ppf)
+          : Math.min(getThresholdGroundDistanceFt(model, horizontalFovDeg, band.ppf, placement.mountHeightFt), groundFootprint.farFt);
+
+        return {
+          label: band.label,
+          radiusFt,
+        };
+      });
       const insideFov = isFisheyeModel(model)
         ? distanceFt <= getFisheyeRadiusFt(model, recognitionBands[0].ppf)
         : distanceFt >= groundFootprint.nearFt &&
@@ -1023,7 +1039,7 @@ function getHoverReadout(
         head,
         distanceFt,
         pixelsPerFoot,
-        recognitionType: classifyPixelsPerFoot(pixelsPerFoot),
+        recognitionType: classifyRangeByZone(distanceFt, zones),
         insideFov,
       };
     })
