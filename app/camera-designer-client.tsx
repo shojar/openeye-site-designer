@@ -63,7 +63,7 @@ type DrawableHead = CameraHead & {
   rotationDeg: number;
 };
 
-const appVersion = "0.0.6";
+const appVersion = "0.0.7";
 
 const cameraModelsCatalog: CameraModel[] = [
   {
@@ -737,6 +737,18 @@ function isMultisensorModel(model: CameraModel) {
 
 function hasAdjustableLens(model: CameraModel) {
   return model.lensMaxMm - model.lensMinMm > 0.05;
+}
+
+function formatLensMm(value: number) {
+  return value.toFixed(2).replace(/\.?0+$/, "");
+}
+
+function formatLensLabel(model: CameraModel) {
+  if (!hasAdjustableLens(model)) {
+    return `${formatLensMm(model.lensMinMm)} mm`;
+  }
+
+  return `${formatLensMm(model.lensMinMm)}-${formatLensMm(model.lensMaxMm)} mm`;
 }
 
 function normalizeAngle(degrees: number) {
@@ -1605,7 +1617,7 @@ export default function CameraDesignerClient() {
               isCloud ? "border-amber-300/30 text-amber-100" : "border-white/10 text-slate-300"
             }`}
           >
-            {isCloud ? "Cloud" : `${model.lensMinMm}-${model.lensMaxMm} mm`}
+            {isCloud ? "Cloud" : formatLensLabel(model)}
           </span>
         </div>
         <p className="mt-3 text-sm leading-6 text-slate-300">{model.description}</p>
@@ -1680,9 +1692,8 @@ export default function CameraDesignerClient() {
               </div>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[360px]">
+            <div className="grid gap-3 lg:min-w-[180px]">
               <MetricCard label="Placed cameras" value={`${placements.length}`} helper="Library items on the map" />
-              <MetricCard label="Map scale" value={`${formatNumber(mapWidthFt)} ft`} helper="This floor's measured map width" />
             </div>
           </div>
         </section>
