@@ -1718,7 +1718,7 @@ export default function CameraDesignerClient() {
             </div>
 
             <div className="grid gap-2 lg:w-40 lg:min-w-40">
-              <div className="justify-self-end rounded-2xl border border-white/10 bg-white/5 p-2 shadow-[0_12px_40px_rgba(0,0,0,0.15)]">
+              <div className="justify-self-end">
                 <Image
                   src="/openeye-logo.svg"
                   alt="OpenEye"
@@ -2055,7 +2055,7 @@ export default function CameraDesignerClient() {
                   />
                 ) : (
                   <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-[radial-gradient(circle_at_50%_35%,rgba(34,211,238,0.18),transparent_24%),linear-gradient(135deg,rgba(15,23,42,0.95),rgba(3,7,18,0.98))] p-8">
-                    <div className="w-full max-w-xl rounded-[1.5rem] border border-white/10 bg-white/5 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
+                    <div className="w-full max-w-xl">
                       <Image
                         src="/openeye-logo.svg"
                         alt="OpenEye"
@@ -2467,10 +2467,10 @@ function MetricCard({ label, value, helper }: { label: string; value: string; he
 
 function StatPanel({ label, value, helper }: { label: string; value: string; helper: string }) {
   return (
-    <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-4">
-      <div className="text-xs uppercase tracking-[0.24em] text-slate-500">{label}</div>
+    <div className="rounded-[1.5rem] border border-white/10 bg-slate-950/70 p-4 shadow-[0_12px_40px_rgba(0,0,0,0.15)]">
+      <div className="text-xs uppercase tracking-[0.24em] text-slate-400">{label}</div>
       <div className="mt-2 text-lg font-semibold text-white">{value}</div>
-      <div className="mt-1 text-sm text-slate-400">{helper}</div>
+      <div className="mt-1 text-sm text-slate-300">{helper}</div>
     </div>
   );
 }
