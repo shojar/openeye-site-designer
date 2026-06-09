@@ -2314,14 +2314,16 @@ export default function CameraDesignerClient() {
                   value={selectedPlacement.mountHeightFt}
                   onChange={(value) => updateSelectedPlacement((placement) => ({ ...placement, mountHeightFt: value }))}
                 />
-                <ControlSlider
-                  label="Rotation"
-                  unit="deg"
-                  min={0}
-                  max={359}
-                  value={selectedPlacement.rotationDeg}
-                  onChange={(value) => updateSelectedPlacement((placement) => ({ ...placement, rotationDeg: value }))}
-                />
+                {!isFisheyeModel(selectedModel) ? (
+                  <ControlSlider
+                    label="Rotation"
+                    unit="deg"
+                    min={0}
+                    max={359}
+                    value={selectedPlacement.rotationDeg}
+                    onChange={(value) => updateSelectedPlacement((placement) => ({ ...placement, rotationDeg: value }))}
+                  />
+                ) : null}
                 {isMultisensorModel(selectedModel) ? (
                   <div className="space-y-3">
                     {getDrawableHeads(selectedPlacement, selectedModel).map((head) => (
@@ -2367,10 +2369,10 @@ export default function CameraDesignerClient() {
                       </div>
                     ))}
                   </div>
-                ) : (
+                ) : isFisheyeModel(selectedModel) ? null : (
                   <>
                     <ControlSlider
-                      label={isFisheyeModel(selectedModel) ? "Mount aim" : "Tilt from down"}
+                      label="Tilt from down"
                       unit="deg"
                       min={0}
                       max={90}
