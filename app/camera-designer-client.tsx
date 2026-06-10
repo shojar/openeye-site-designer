@@ -1688,8 +1688,8 @@ export default function CameraDesignerClient() {
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_88%_12%,#009CFF_0%,rgba(0,156,255,0.22)_24%,transparent_42%),linear-gradient(135deg,#0700A8_0%,#0500D8_48%,#020044_100%)] text-slate-50">
-      <div className="pointer-events-none absolute inset-x-[-8%] bottom-[-11rem] h-[32rem] bg-[#DDF4FF] shadow-[0_-28px_70px_#009CFF33] [clip-path:polygon(0_20%,100%_0,100%_100%,0_100%)]" />
-      <div className="pointer-events-none absolute inset-x-[-8%] bottom-[-12rem] h-[30rem] bg-white [clip-path:polygon(0_27%,100%_7%,100%_100%,0_100%)]" />
+      <div className="pointer-events-none absolute inset-x-[-8%] top-[36rem] h-[48rem] bg-[#DDF4FF] shadow-[0_-28px_70px_#009CFF33] [clip-path:polygon(0_20%,100%_0,100%_100%,0_100%)]" />
+      <div className="pointer-events-none absolute inset-x-[-8%] top-[39rem] h-[48rem] bg-white [clip-path:polygon(0_27%,100%_7%,100%_100%,0_100%)]" />
       <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-[1800px] flex-col gap-6 px-4 py-4 sm:px-6 lg:px-8">
         <section className="rounded-[2rem] border border-white/20 bg-white/[0.06] px-5 py-4 shadow-[0_30px_80px_rgba(2,0,68,0.24)] backdrop-blur-xl">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
