@@ -65,7 +65,7 @@ type DrawableHead = CameraHead & {
   rotationDeg: number;
 };
 
-const appVersion = "0.0.95";
+const appVersion = "0.0.97";
 // Add `specSheetUrl` to any camera model below to replace this shared placeholder.
 const defaultSpecSheetUrl = "https://www.openeye.net/products/cameras/";
 
@@ -1252,7 +1252,7 @@ export default function CameraDesignerClient() {
   const [draggingPlacementId, setDraggingPlacementId] = useState<string | null>(null);
   const [isMeasuringScale, setIsMeasuringScale] = useState(false);
   const [isMeasuringDistance, setIsMeasuringDistance] = useState(false);
-  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
+  const [openExportMenu, setOpenExportMenu] = useState<"floor" | "all" | null>(null);
   const [hoverPoint, setHoverPoint] = useState<{ x: number; y: number } | null>(null);
 
   const stageRef = useRef<HTMLDivElement | null>(null);
@@ -1271,6 +1271,7 @@ export default function CameraDesignerClient() {
   const mapName = activeMap.name;
   const placements = activeMap.placements;
   const hasAnyPlacements = maps.some((map) => map.placements.length > 0);
+  const hasActiveFloorPlacements = placements.length > 0;
 
   function selectFloor(index: number) {
     activeMapIndexRef.current = index;
@@ -1711,14 +1712,19 @@ export default function CameraDesignerClient() {
     );
   }
 
-  function exportAllCameraCounts() {
-    const rows = maps.flatMap((map, floorIndex) =>
-      getCameraCountRows(map, cameraModels).map((row) => ({
+  function exportCameraCounts(floorIndexes: number[], filename: string) {
+    const rows = floorIndexes.flatMap((floorIndex) => {
+      const map = maps[floorIndex];
+
+      if (!map) return [];
+
+      return getCameraCountRows(map, cameraModels).map((row) => ({
         floor: map.name || `Floor ${floorIndex + 1}`,
         model: row.modelName,
         quantity: row.quantity,
-      })),
-    );
+      }));
+    });
+
     const csv = [
       "Floor,Model,Quantity",
       ...rows.map((row) => [row.floor, row.model, row.quantity].map(escapeCsvValue).join(",")),
@@ -1728,71 +1734,36 @@ export default function CameraDesignerClient() {
     const link = document.createElement("a");
 
     link.href = url;
-    link.download = "camera-counts-by-floor.csv";
+    link.download = filename;
     link.click();
     URL.revokeObjectURL(url);
   }
 
-  function buildReportFloorSvg(map: MapSlot) {
-    const reportWidth = 1100;
-    const reportHeight = Math.round(reportWidth / Math.max(map.aspect, 0.2));
-    const reportStageSize = { width: reportWidth, height: reportHeight };
-
-    const zonePaths = map.placements
-      .flatMap((placement) => {
-        const model = cameraModels.find((item) => item.id === placement.modelId);
-
-        if (!model) return [];
-
-        return getDrawableHeads(placement, model).flatMap((head) => {
-          const stats = buildCameraStats(placement, model, reportStageSize, map.widthFt, activeThreshold, head);
-
-          return stats.zoneBands.map((band, index) => {
-            const fill = index === 0 ? "rgba(255,107,53,0.10)" : index === 1 ? "rgba(0,156,255,0.16)" : "rgba(33,183,255,0.22)";
-            const stroke = index === 0 ? "rgba(255,107,53,0.62)" : index === 1 ? "rgba(0,156,255,0.64)" : "rgba(33,183,255,0.78)";
-
-            return `<path d="${escapeHtml(band.pathD)}" fill="${fill}" stroke="${stroke}" stroke-width="2" stroke-opacity="0.8" fill-opacity="0.85" />`;
-          });
-        });
-      })
-      .join("");
-
-    const markers = map.placements
-      .map((placement, index) => {
-        const model = cameraModels.find((item) => item.id === placement.modelId);
-        const cx = placement.x * reportWidth;
-        const cy = placement.y * reportHeight;
-
-        return `
-          <g>
-            <circle cx="${cx}" cy="${cy}" r="16" fill="#050B28" stroke="#21B7FF" stroke-width="3" />
-            <circle cx="${cx}" cy="${cy}" r="6" fill="#009CFF" />
-            <text x="${cx}" y="${cy + 34}" text-anchor="middle" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="15" font-weight="700">${index + 1}</text>
-            <text x="${cx}" y="${cy + 51}" text-anchor="middle" fill="#D8E2FF" font-family="Arial, sans-serif" font-size="10" font-weight="700">${escapeHtml(model?.name ?? placement.modelId)}</text>
-          </g>
-        `;
-      })
-      .join("");
-
-    return `
-      <div class="map-frame" style="aspect-ratio:${map.aspect};">
-        ${
-          map.url
-            ? `<img class="map-image" src="${escapeHtml(map.url)}" alt="${escapeHtml(map.name)}" />`
-            : `<div class="map-empty">No map image loaded</div>`
-        }
-        <svg class="map-overlay" viewBox="0 0 ${reportWidth} ${reportHeight}" preserveAspectRatio="none" aria-hidden="true">
-          ${zonePaths}
-          ${markers}
-        </svg>
-      </div>
-    `;
+  function exportAllCameraCounts() {
+    exportCameraCounts(
+      maps.map((_, floorIndex) => floorIndex),
+      "camera-counts-by-floor.csv",
+    );
   }
 
-  function buildReportHtml() {
+  function exportActiveFloorCameraCounts() {
+    exportCameraCounts([activeMapIndex], `${mapName || `floor-${activeMapIndex + 1}`}-camera-counts.csv`);
+  }
+
+  function getReportFloorEntries(floorIndexes: number[]) {
+    return floorIndexes
+      .map((floorIndex) => {
+        const map = maps[floorIndex];
+
+        return map ? { map, floorIndex } : null;
+      })
+      .filter((entry): entry is { map: MapSlot; floorIndex: number } => entry !== null);
+  }
+
+  function buildReportHtml(floorIndexes: number[] = maps.map((_, floorIndex) => floorIndex)) {
     const generatedAt = new Date().toLocaleString();
-    const floorSections = maps
-      .map((map, floorIndex) => {
+    const floorSections = getReportFloorEntries(floorIndexes)
+      .map(({ map, floorIndex }) => {
         const rows = getCameraCountRows(map, cameraModels);
         const totalCameras = map.placements.length;
         const cameraRows =
@@ -2014,7 +1985,7 @@ export default function CameraDesignerClient() {
       </html>`;
   }
 
-  function printCameraReport() {
+  function printCameraReport(floorIndexes?: number[]) {
     const reportWindow = window.open("", "_blank");
 
     if (!reportWindow) {
@@ -2022,8 +1993,68 @@ export default function CameraDesignerClient() {
     }
 
     reportWindow.document.open();
-    reportWindow.document.write(buildReportHtml());
+    reportWindow.document.write(buildReportHtml(floorIndexes));
     reportWindow.document.close();
+  }
+
+  function printActiveFloorCameraReport() {
+    printCameraReport([activeMapIndex]);
+  }
+
+  function buildReportFloorSvg(map: MapSlot) {
+    const reportWidth = 1100;
+    const reportHeight = Math.round(reportWidth / Math.max(map.aspect, 0.2));
+    const reportStageSize = { width: reportWidth, height: reportHeight };
+
+    const zonePaths = map.placements
+      .flatMap((placement) => {
+        const model = cameraModels.find((item) => item.id === placement.modelId);
+
+        if (!model) return [];
+
+        return getDrawableHeads(placement, model).flatMap((head) => {
+          const stats = buildCameraStats(placement, model, reportStageSize, map.widthFt, activeThreshold, head);
+
+          return stats.zoneBands.map((band, index) => {
+            const fill = index === 0 ? "rgba(255,107,53,0.10)" : index === 1 ? "rgba(0,156,255,0.16)" : "rgba(33,183,255,0.22)";
+            const stroke = index === 0 ? "rgba(255,107,53,0.62)" : index === 1 ? "rgba(0,156,255,0.64)" : "rgba(33,183,255,0.78)";
+
+            return `<path d="${escapeHtml(band.pathD)}" fill="${fill}" stroke="${stroke}" stroke-width="2" stroke-opacity="0.8" fill-opacity="0.85" />`;
+          });
+        });
+      })
+      .join("");
+
+    const markers = map.placements
+      .map((placement, index) => {
+        const model = cameraModels.find((item) => item.id === placement.modelId);
+        const cx = placement.x * reportWidth;
+        const cy = placement.y * reportHeight;
+
+        return `
+          <g>
+            <circle cx="${cx}" cy="${cy}" r="16" fill="#050B28" stroke="#21B7FF" stroke-width="3" />
+            <circle cx="${cx}" cy="${cy}" r="6" fill="#009CFF" />
+            <text x="${cx}" y="${cy + 34}" text-anchor="middle" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="15" font-weight="700">${index + 1}</text>
+            <text x="${cx}" y="${cy + 51}" text-anchor="middle" fill="#D8E2FF" font-family="Arial, sans-serif" font-size="10" font-weight="700">${escapeHtml(model?.name ?? placement.modelId)}</text>
+          </g>
+        `;
+      })
+      .join("");
+
+    return `
+      <div class="map-frame" style="aspect-ratio:${map.aspect};">
+        ${
+          map.url
+            ? `<img class="map-image" src="${escapeHtml(map.url)}" alt="${escapeHtml(map.name)}" />`
+            : `<div class="map-empty">No map image loaded</div>`
+        }
+        <svg class="map-overlay" viewBox="0 0 ${reportWidth} ${reportHeight}" preserveAspectRatio="none" aria-hidden="true">
+          ${zonePaths}
+          ${markers}
+        </svg>
+      </div>
+    `;
   }
 
   return (
@@ -2260,22 +2291,56 @@ export default function CameraDesignerClient() {
                 </div>
 
                 <div className="rounded-3xl border border-[#FFFFFF1F] bg-[#FFFFFF10] p-4">
-                  <span className="text-xs uppercase tracking-[0.22em] text-[#8EA2FF]">Export</span>
+                  <span className="text-xs uppercase tracking-[0.22em] text-[#8EA2FF]">Save/export</span>
                   <div className="relative mt-2">
                     <button
                       type="button"
-                      onClick={() => setIsExportMenuOpen((currentValue) => !currentValue)}
+                      onClick={() => setOpenExportMenu((currentValue) => (currentValue === "floor" ? null : "floor"))}
+                      disabled={!hasActiveFloorPlacements}
+                      className="w-full rounded-full border border-[#009CFF] bg-[#009CFF] px-4 py-2 text-sm font-semibold text-white shadow-[0_0_22px_#009CFF55] transition hover:border-[#21B7FF] hover:bg-[#21B7FF] disabled:cursor-not-allowed disabled:border-[#FFFFFF1F] disabled:bg-[#FFFFFF10] disabled:text-[#B9C7FF]/60 disabled:shadow-none"
+                    >
+                      Export this floor
+                    </button>
+                    {openExportMenu === "floor" && hasActiveFloorPlacements ? (
+                      <div className="absolute right-0 z-30 mt-2 w-48 overflow-hidden rounded-2xl border border-[#FFFFFF24] bg-[#030950F2] p-1 shadow-[0_18px_40px_rgba(2,0,68,0.35)] backdrop-blur-xl">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOpenExportMenu(null);
+                            exportActiveFloorCameraCounts();
+                          }}
+                          className="block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-white transition hover:bg-[#FFFFFF14]"
+                        >
+                          BOM CSV
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOpenExportMenu(null);
+                            printActiveFloorCameraReport();
+                          }}
+                          className="block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-white transition hover:bg-[#FFFFFF14]"
+                        >
+                          Report PDF
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
+                  <div className="relative mt-2">
+                    <button
+                      type="button"
+                      onClick={() => setOpenExportMenu((currentValue) => (currentValue === "all" ? null : "all"))}
                       disabled={!hasAnyPlacements}
                       className="w-full rounded-full border border-[#009CFF] bg-[#009CFF] px-4 py-2 text-sm font-semibold text-white shadow-[0_0_22px_#009CFF55] transition hover:border-[#21B7FF] hover:bg-[#21B7FF] disabled:cursor-not-allowed disabled:border-[#FFFFFF1F] disabled:bg-[#FFFFFF10] disabled:text-[#B9C7FF]/60 disabled:shadow-none"
                     >
                       Export all floors
                     </button>
-                    {isExportMenuOpen && hasAnyPlacements ? (
+                    {openExportMenu === "all" && hasAnyPlacements ? (
                       <div className="absolute right-0 z-30 mt-2 w-48 overflow-hidden rounded-2xl border border-[#FFFFFF24] bg-[#030950F2] p-1 shadow-[0_18px_40px_rgba(2,0,68,0.35)] backdrop-blur-xl">
                         <button
                           type="button"
                           onClick={() => {
-                            setIsExportMenuOpen(false);
+                            setOpenExportMenu(null);
                             exportAllCameraCounts();
                           }}
                           className="block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-white transition hover:bg-[#FFFFFF14]"
@@ -2285,7 +2350,7 @@ export default function CameraDesignerClient() {
                         <button
                           type="button"
                           onClick={() => {
-                            setIsExportMenuOpen(false);
+                            setOpenExportMenu(null);
                             printCameraReport();
                           }}
                           className="block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-white transition hover:bg-[#FFFFFF14]"
