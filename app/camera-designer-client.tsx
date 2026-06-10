@@ -9,6 +9,7 @@ type CameraModel = {
   category: string;
   description: string;
   manufacturer?: string;
+  specSheetUrl?: string;
   sensorWidthMm: number;
   sensorHeightMm: number;
   resolutionWidth: number;
@@ -65,8 +66,10 @@ type DrawableHead = CameraHead & {
 };
 
 const appVersion = "0.0.95";
+// Add `specSheetUrl` to any camera model below to replace this shared placeholder.
+const defaultSpecSheetUrl = "https://www.openeye.net/products/cameras/";
 
-const cameraModelsCatalog: CameraModel[] = [
+const cameraModelsCatalog: CameraModel[] = ([
   {
     id: "oe-c1011d4-s",
     name: "OE-C1011D4-S",
@@ -84,6 +87,7 @@ const cameraModelsCatalog: CameraModel[] = [
     defaultTiltDeg: 30,
     defaultRotationDeg: 0,
     accent: "from-cyan-400 to-blue-500",
+    specSheetUrl: "https://portal.openeye.net/assets/documents/oe-c1011d4-s-spec-sheet"
   },
   {
     id: "oe-c1012d2-s",
@@ -555,7 +559,10 @@ const cameraModelsCatalog: CameraModel[] = [
     defaultRotationDeg: 0,
     accent: "from-emerald-400 to-teal-500",
   },
-];
+] satisfies CameraModel[]).map((model: CameraModel) => ({
+  ...model,
+  specSheetUrl: model.specSheetUrl ?? defaultSpecSheetUrl,
+}));
 
 const cloudCameraModelIds = new Set([
   "oe-cc3020d5",
@@ -1366,6 +1373,7 @@ export default function CameraDesignerClient() {
   const activeThreshold = getTargetThreshold(targetBand);
   const activeCameraLabel = activeModel ? activeModel.name : "No camera loaded";
   const activeCameraCategory = activeModel ? activeModel.category : "Pick a camera to begin";
+  const activeCameraSpecSheetUrl = activeModel?.specSheetUrl ?? defaultSpecSheetUrl;
 
   const scaleMeasureDistancePx = useMemo(() => {
     if (scaleMeasurePoints.length < 2 || stageSize.width <= 0 || stageSize.height <= 0) {
@@ -2217,6 +2225,16 @@ export default function CameraDesignerClient() {
                 <div className="rounded-3xl border border-[#FFFFFF1F] bg-[#FFFFFF10] p-4">
                   <span className="text-xs uppercase tracking-[0.22em] text-[#8EA2FF]">Active camera</span>
                   <div className="mt-2 text-sm font-semibold text-white">{activeCameraLabel}</div>
+                  {activeModel ? (
+                    <a
+                      href={activeCameraSpecSheetUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-1 inline-flex text-xs font-semibold text-[#21B7FF] underline-offset-4 transition hover:text-white hover:underline"
+                    >
+                      Spec Sheet
+                    </a>
+                  ) : null}
                   <div className="mt-1 text-sm text-[#B9C7FF]">{activeCameraCategory}</div>
                 </div>
 
