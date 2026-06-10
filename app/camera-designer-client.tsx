@@ -33,6 +33,7 @@ type Placement = {
   mountHeightFt: number;
   tiltDeg: number;
   rotationDeg: number;
+  showFov?: boolean;
   heads?: CameraHead[];
 };
 
@@ -828,6 +829,7 @@ function createPlacement(model: CameraModel, x: number, y: number): Placement {
     mountHeightFt: model.defaultMountHeightFt,
     tiltDeg: model.defaultTiltDeg,
     rotationDeg: model.defaultRotationDeg,
+    showFov: true,
     heads: getDefaultHeads(model),
   };
 }
@@ -2010,7 +2012,7 @@ export default function CameraDesignerClient() {
       .flatMap((placement) => {
         const model = cameraModels.find((item) => item.id === placement.modelId);
 
-        if (!model) return [];
+        if (!model || placement.showFov === false) return [];
 
         return getDrawableHeads(placement, model).flatMap((head) => {
           const stats = buildCameraStats(placement, model, reportStageSize, map.widthFt, activeThreshold, head);
@@ -2026,7 +2028,7 @@ export default function CameraDesignerClient() {
       .join("");
 
     const markers = map.placements
-      .map((placement, index) => {
+      .map((placement) => {
         const model = cameraModels.find((item) => item.id === placement.modelId);
         const cx = placement.x * reportWidth;
         const cy = placement.y * reportHeight;
@@ -2035,8 +2037,7 @@ export default function CameraDesignerClient() {
           <g>
             <circle cx="${cx}" cy="${cy}" r="16" fill="#050B28" stroke="#21B7FF" stroke-width="3" />
             <circle cx="${cx}" cy="${cy}" r="6" fill="#009CFF" />
-            <text x="${cx}" y="${cy + 34}" text-anchor="middle" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="15" font-weight="700">${index + 1}</text>
-            <text x="${cx}" y="${cy + 51}" text-anchor="middle" fill="#D8E2FF" font-family="Arial, sans-serif" font-size="10" font-weight="700">${escapeHtml(model?.name ?? placement.modelId)}</text>
+            <text x="${cx}" y="${cy + 38}" text-anchor="middle" fill="#D8E2FF" font-family="Arial, sans-serif" font-size="10" font-weight="700">${escapeHtml(model?.name ?? placement.modelId)}</text>
           </g>
         `;
       })
@@ -2623,7 +2624,7 @@ export default function CameraDesignerClient() {
                     {placements.flatMap((placement) => {
                       const model = cameraModels.find((item) => item.id === placement.modelId);
 
-                      if (!model || stageSize.width === 0) return [];
+                      if (!model || stageSize.width === 0 || placement.showFov === false) return [];
 
                       const isSelected = placement.id === selectedPlacementId;
 
@@ -2757,6 +2758,17 @@ export default function CameraDesignerClient() {
                         className="rounded-full border border-[#FFFFFF59] bg-transparent px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[#FFFFFF14]"
                       >
                         Duplicate
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => updateSelectedPlacement((placement) => ({ ...placement, showFov: placement.showFov === false }))}
+                        className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                          selectedPlacement.showFov === false
+                            ? "border-[#FFFFFF59] bg-transparent text-white hover:bg-[#FFFFFF14]"
+                            : "border-[#21B7FF]/55 bg-[#009CFF]/15 text-[#DDF4FF] hover:bg-[#009CFF]/25"
+                        }`}
+                      >
+                        {selectedPlacement.showFov === false ? "Show FOV" : "Hide FOV"}
                       </button>
                       <button
                         type="button"
