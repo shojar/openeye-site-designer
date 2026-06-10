@@ -761,6 +761,25 @@ function formatLensLabel(model: CameraModel) {
   return `${formatLensMm(model.lensMinMm)}-${formatLensMm(model.lensMaxMm)} mm`;
 }
 
+function formatLensSpec(model: CameraModel) {
+  if (!hasAdjustableLens(model)) {
+    return `${formatLensMm(model.lensMinMm)}mm`;
+  }
+
+  return `${formatLensMm(model.lensMinMm)}mm-${formatLensMm(model.lensMaxMm)}mm`;
+}
+
+function formatMegapixels(model: CameraModel) {
+  const megapixels = (model.resolutionWidth * model.resolutionHeight) / 1_000_000;
+  const roundedMegapixels = Math.round(megapixels);
+
+  return `${roundedMegapixels}MP`;
+}
+
+function formatCameraSpecLine(model: CameraModel) {
+  return `${formatMegapixels(model)} ${model.category} with ${formatLensSpec(model)} lens`;
+}
+
 function normalizeAngle(degrees: number) {
   return ((degrees % 360) + 360) % 360;
 }
@@ -1373,6 +1392,7 @@ export default function CameraDesignerClient() {
   const activeThreshold = getTargetThreshold(targetBand);
   const activeCameraLabel = activeModel ? activeModel.name : "No camera loaded";
   const activeCameraCategory = activeModel ? activeModel.category : "Pick a camera to begin";
+  const activeCameraSpecLine = activeModel ? formatCameraSpecLine(activeModel) : "Camera specs will appear here";
   const activeCameraSpecSheetUrl = activeModel?.specSheetUrl ?? defaultSpecSheetUrl;
 
   const scaleMeasureDistancePx = useMemo(() => {
@@ -2222,20 +2242,21 @@ export default function CameraDesignerClient() {
           <section className="flex min-w-0 flex-col gap-4">
             <div className="rounded-[2rem] border border-[#FFFFFF1F] bg-[#030950CC] p-4 shadow-[0_24px_60px_rgba(2,0,68,0.22)] backdrop-blur-xl">
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                <div className="rounded-3xl border border-[#FFFFFF1F] bg-[#FFFFFF10] p-4">
+                <div className="flex h-full flex-col rounded-3xl border border-[#FFFFFF1F] bg-[#FFFFFF10] p-4">
                   <span className="text-xs uppercase tracking-[0.22em] text-[#8EA2FF]">Active camera</span>
                   <div className="mt-2 text-sm font-semibold text-white">{activeCameraLabel}</div>
+                  <div className="mt-1 text-sm text-[#B9C7FF]">{activeCameraCategory}</div>
+                  <div className="mt-2 text-xs font-medium text-[#D8E2FF]">{activeCameraSpecLine}</div>
                   {activeModel ? (
                     <a
                       href={activeCameraSpecSheetUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="mt-1 inline-flex text-xs font-semibold text-[#21B7FF] underline-offset-4 transition hover:text-white hover:underline"
+                      className="mt-auto inline-flex w-fit rounded-full border border-[#009CFF] bg-[#009CFF] px-4 py-2 text-xs font-semibold text-white shadow-[0_0_22px_#009CFF55] transition hover:border-[#21B7FF] hover:bg-[#21B7FF]"
                     >
                       Spec Sheet
                     </a>
                   ) : null}
-                  <div className="mt-1 text-sm text-[#B9C7FF]">{activeCameraCategory}</div>
                 </div>
 
                 <div className="rounded-3xl border border-[#FFFFFF1F] bg-[#FFFFFF10] p-4">
