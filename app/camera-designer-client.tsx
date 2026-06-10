@@ -64,7 +64,7 @@ type DrawableHead = CameraHead & {
   rotationDeg: number;
 };
 
-const appVersion = "0.0.8";
+const appVersion = "0.0.95";
 
 const cameraModelsCatalog: CameraModel[] = [
   {
@@ -1621,33 +1621,29 @@ export default function CameraDesignerClient() {
         onClick={() => setActiveModelId(model.id)}
         className={`group w-full rounded-3xl border p-4 text-left transition ${
           isActive
-            ? isCloud
-              ? "border-amber-300/50 bg-amber-400/10 shadow-[0_0_0_1px_rgba(251,191,36,0.08)]"
-              : "border-cyan-300/40 bg-cyan-400/10 shadow-[0_0_0_1px_rgba(34,211,238,0.08)]"
-            : isCloud
-              ? "border-amber-300/20 bg-amber-400/[0.06] hover:border-amber-300/40 hover:bg-amber-400/10"
-              : "border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.06]"
+            ? "border-[#21B7FF] bg-[#009CFF22] shadow-[0_0_0_1px_#009CFF55]"
+            : "border-[#FFFFFF24] bg-[#FFFFFF14] hover:border-[#21B7FF] hover:bg-[#009CFF22]"
         }`}
       >
         <div className={`mb-3 h-1.5 w-20 rounded-full bg-gradient-to-r ${model.accent}`} />
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="text-sm font-semibold text-white">{model.name}</div>
-            <div className="mt-1 text-xs uppercase tracking-[0.2em] text-slate-400">{model.category}</div>
+            <div className="mt-1 text-xs uppercase tracking-[0.2em] text-[#8EA2FF]">{model.category}</div>
           </div>
           <span
             className={`rounded-full border px-2 py-1 text-[10px] uppercase tracking-[0.22em] ${
-              isCloud ? "border-amber-300/30 text-amber-100" : "border-white/10 text-slate-300"
+              isCloud ? "border-[#FF6B35]/45 text-[#FF6B35]" : "border-[#FFFFFF24] text-[#D8E2FF]"
             }`}
           >
             {isCloud ? "Cloud" : formatLensLabel(model)}
           </span>
         </div>
-        <p className="mt-3 text-sm leading-6 text-slate-300">{model.description}</p>
-        <div className="mt-3 text-[10px] uppercase tracking-[0.22em] text-slate-500">
+        <p className="mt-3 text-sm leading-6 text-[#D8E2FF]">{model.description}</p>
+        <div className="mt-3 text-[10px] uppercase tracking-[0.22em] text-[#8EA2FF]">
           {isCloud ? "Cloud camera / no NVR required" : (model.manufacturer ?? "OpenEye / OWS")} - {model.category}
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-slate-300">
+        <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-[#D8E2FF]">
           <InfoChip label="FOV" value={`${formatNumber(getHorizontalFov(model, model.defaultLensMm))} deg`} />
           <InfoChip label="Stream" value={`${model.resolutionWidth} px`} />
           <InfoChip label="Sensor" value={`${model.sensorWidthMm} mm`} />
@@ -1691,16 +1687,18 @@ export default function CameraDesignerClient() {
   }
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[rgb(37,150,190)] text-slate-50">
-      <div className="mx-auto flex min-h-screen w-full max-w-[1800px] flex-col gap-6 px-4 py-4 sm:px-6 lg:px-8">
-        <section className="rounded-[2rem] border border-white/10 bg-slate-950/70 px-5 py-4 shadow-[0_30px_80px_rgba(0,0,0,0.35)] backdrop-blur-xl">
+    <main className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_88%_12%,#009CFF_0%,rgba(0,156,255,0.22)_24%,transparent_42%),linear-gradient(135deg,#0700A8_0%,#0500D8_48%,#020044_100%)] text-slate-50">
+      <div className="pointer-events-none absolute inset-x-[-8%] bottom-[-11rem] h-[32rem] bg-[#DDF4FF] shadow-[0_-28px_70px_#009CFF33] [clip-path:polygon(0_20%,100%_0,100%_100%,0_100%)]" />
+      <div className="pointer-events-none absolute inset-x-[-8%] bottom-[-12rem] h-[30rem] bg-white [clip-path:polygon(0_27%,100%_7%,100%_100%,0_100%)]" />
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-[1800px] flex-col gap-6 px-4 py-4 sm:px-6 lg:px-8">
+        <section className="rounded-[2rem] border border-white/20 bg-white/[0.06] px-5 py-4 shadow-[0_30px_80px_rgba(2,0,68,0.24)] backdrop-blur-xl">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="max-w-4xl space-y-3">
               <div className="flex flex-wrap items-center gap-2">
-                <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.24em] text-cyan-200">
+                <div className="inline-flex items-center gap-2 rounded-full border border-[#009CFF]/45 bg-[#009CFF]/15 px-3 py-1 text-xs font-medium uppercase tracking-[0.24em] text-white">
                   OpenEye / OWS site designer
                 </div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-slate-950/60 px-3 py-1 text-xs font-medium uppercase tracking-[0.24em] text-slate-300">
+                <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.06] px-3 py-1 text-xs font-medium uppercase tracking-[0.24em] text-[#D8E2FF]">
                   Version {appVersion}
                 </div>
                 <div className="inline-flex items-center gap-2 rounded-full border border-rose-300/50 bg-rose-500/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-rose-50">
@@ -1711,7 +1709,7 @@ export default function CameraDesignerClient() {
                 <h1 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl">
                   OpenEye Site Designer
                 </h1>
-                <p className="max-w-3xl text-sm leading-6 text-slate-300 sm:text-base">
+                <p className="max-w-3xl text-sm leading-6 text-[#B9C7FF] sm:text-base">
                   Import a map, then set the scale using two known points. Select and then drag them onto the map and tune lens, height, and coverage.
                 </p>
               </div>
@@ -1734,29 +1732,29 @@ export default function CameraDesignerClient() {
         </section>
 
         <section className="grid flex-1 gap-6 xl:grid-cols-[280px_minmax(0,1fr)_340px]">
-          <aside className="rounded-[2rem] border border-white/10 bg-slate-950/70 p-4 shadow-[0_24px_60px_rgba(0,0,0,0.3)] backdrop-blur-xl">
-            <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-4">
+          <aside className="rounded-[2rem] border border-[#FFFFFF24] bg-[#030950CC] p-4 shadow-[0_24px_60px_rgba(2,0,68,0.3)] backdrop-blur-xl">
+            <div className="flex items-center justify-between gap-4 border-b border-[#FFFFFF24] pb-4">
               <div>
                 <h2 className="text-lg font-semibold text-white">OWS camera catalog</h2>
-                <p className="text-sm text-slate-400">Filter by style, then pick a specific camera to drag onto the map.</p>
+                <p className="text-sm text-[#B9C7FF]">Filter by style, then pick a specific camera to drag onto the map.</p>
               </div>
               <div className="flex flex-wrap justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => openMapImport()}
-                  className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs font-medium text-slate-200 transition hover:border-cyan-400/40 hover:bg-cyan-400/10"
+                  className="rounded-full border border-[#009CFF] bg-[#009CFF] px-4 py-2 text-xs font-semibold text-white shadow-[0_0_22px_#009CFF55] transition hover:border-[#21B7FF] hover:bg-[#21B7FF]"
                 >
                   Import map
                 </button>
               </div>
             </div>
 
-            <div className="mt-4 rounded-3xl border border-white/10 bg-white/[0.03] p-4">
+            <div className="mt-4 rounded-3xl border border-[#FFFFFF24] bg-[#FFFFFF14] p-4">
               <h3 className="text-sm font-semibold text-white">Camera filters</h3>
-              <p className="mt-1 text-sm text-slate-400">
+              <p className="mt-1 text-sm text-[#B9C7FF]">
                 Use the style dropdown to narrow the catalog, then use the camera dropdown to choose what gets placed.
               </p>
-              <label className="mt-4 block text-xs uppercase tracking-[0.24em] text-slate-500">
+              <label className="mt-4 block text-xs uppercase tracking-[0.24em] text-[#8EA2FF]">
                 Style filter
                 <select
                   value={activeStyle}
@@ -1769,7 +1767,7 @@ export default function CameraDesignerClient() {
                     setActiveStyle(nextStyle);
                     setActiveModelId(nextCamera?.id ?? null);
                   }}
-                  className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-900/80 px-3 py-2 text-sm text-white outline-none transition focus:border-cyan-400/50"
+                  className="mt-2 w-full rounded-2xl border border-[#FFFFFF24] bg-[#020044]/70 px-3 py-2 text-sm text-white outline-none transition focus:border-[#009CFF]"
                 >
                   {styleOptions.map((style) => (
                     <option key={style} value={style}>
@@ -1778,12 +1776,12 @@ export default function CameraDesignerClient() {
                   ))}
                 </select>
               </label>
-              <label className="mt-4 block text-xs uppercase tracking-[0.24em] text-slate-500">
+              <label className="mt-4 block text-xs uppercase tracking-[0.24em] text-[#8EA2FF]">
                 Camera model
                 <select
                   value={activeModelId ?? ""}
                   onChange={(event) => setActiveModelId(event.target.value || null)}
-                  className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-900/80 px-3 py-2 text-sm text-white outline-none transition focus:border-cyan-400/50"
+                  className="mt-2 w-full rounded-2xl border border-[#FFFFFF24] bg-[#020044]/70 px-3 py-2 text-sm text-white outline-none transition focus:border-[#009CFF]"
                 >
                   <option value="" disabled>
                     Select a camera
@@ -1816,35 +1814,35 @@ export default function CameraDesignerClient() {
                   {filteredStandardCameraModels.length > 0 ? (
                     <section className="space-y-3">
                       <div className="flex items-center justify-between gap-3">
-                        <h3 className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">NVR cameras</h3>
-                        <span className="text-xs text-slate-500">{filteredStandardCameraModels.length}</span>
+                        <h3 className="text-xs font-semibold uppercase tracking-[0.24em] text-white">NVR cameras</h3>
+                        <span className="text-xs text-[#B9C7FF]">{filteredStandardCameraModels.length}</span>
                       </div>
                       {filteredStandardCameraModels.map((model) => renderCameraModelButton(model))}
                     </section>
                   ) : null}
                   {filteredCloudCameraModels.length > 0 ? (
-                    <section className="space-y-3 rounded-3xl border border-amber-300/20 bg-amber-400/[0.04] p-3">
+                    <section className="space-y-3 rounded-3xl border border-[#FFFFFF24] bg-[#FFFFFF10] p-3">
                       <div className="flex items-center justify-between gap-3">
                         <div>
-                          <h3 className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-100">Cloud cameras</h3>
-                          <p className="mt-1 text-xs leading-5 text-amber-100/70">These models do not require an NVR.</p>
+                          <h3 className="text-xs font-semibold uppercase tracking-[0.24em] text-[#FF6B35]">Cloud cameras</h3>
+                          <p className="mt-1 text-xs leading-5 text-[#B9C7FF]">These models do not require an NVR.</p>
                         </div>
-                        <span className="text-xs text-amber-100/70">{filteredCloudCameraModels.length}</span>
+                        <span className="text-xs text-[#B9C7FF]">{filteredCloudCameraModels.length}</span>
                       </div>
                       {filteredCloudCameraModels.map((model) => renderCameraModelButton(model))}
                     </section>
                   ) : null}
                 </>
               ) : (
-                <div className="rounded-3xl border border-dashed border-white/15 bg-white/[0.03] p-5 text-sm leading-6 text-slate-300">
+                <div className="rounded-3xl border border-dashed border-[#FFFFFF1F] bg-[#FFFFFF10] p-5 text-sm leading-6 text-[#B9C7FF]">
                   No cameras match this style filter.
                 </div>
               )}
             </div>
 
-            <div className="mt-4 rounded-3xl border border-white/10 bg-white/[0.03] p-4">
+            <div className="mt-4 rounded-3xl border border-[#FFFFFF24] bg-[#FFFFFF14] p-4">
               <h3 className="text-sm font-semibold text-white">Map import</h3>
-              <p className="mt-1 text-sm text-slate-400">
+              <p className="mt-1 text-sm text-[#B9C7FF]">
                 Drop in a floor plan, site survey, or aerial image. The planner keeps the aspect ratio of the image.
               </p>
               <div className="mt-4 max-h-48 overflow-y-auto pr-1">
@@ -1856,8 +1854,8 @@ export default function CameraDesignerClient() {
                       onClick={() => selectFloor(index)}
                       className={`min-h-10 rounded-2xl border px-3 py-2 text-xs font-medium transition ${
                         index === activeMapIndex
-                          ? "border-cyan-300/50 bg-cyan-400/20 text-cyan-50"
-                          : "border-white/10 bg-slate-900/70 text-slate-200 hover:border-cyan-400/40 hover:bg-cyan-400/10"
+                          ? "border-[#21B7FF] bg-[#009CFF22] text-white"
+                          : "border-[#FFFFFF59] bg-transparent text-white hover:bg-[#FFFFFF14]"
                       }`}
                     >
                       {map.name}
@@ -1866,7 +1864,7 @@ export default function CameraDesignerClient() {
                   <button
                     type="button"
                     onClick={addFloor}
-                    className="min-h-10 rounded-2xl border border-dashed border-cyan-300/40 bg-cyan-400/10 px-3 py-2 text-xs font-semibold text-cyan-50 transition hover:bg-cyan-400/20"
+                    className="min-h-10 rounded-full border border-[#009CFF] bg-[#009CFF] px-3 py-2 text-xs font-semibold text-white shadow-[0_0_22px_#009CFF55] transition hover:border-[#21B7FF] hover:bg-[#21B7FF]"
                     aria-label="Add floor"
                   >
                     + Add floor
@@ -1886,44 +1884,44 @@ export default function CameraDesignerClient() {
               <button
                 type="button"
                 onClick={() => openMapImport(activeMapIndex)}
-                className="mt-4 w-full rounded-2xl border border-dashed border-white/15 bg-slate-900/70 px-4 py-6 text-sm text-slate-200 transition hover:border-cyan-400/40 hover:bg-slate-900"
+                className="mt-4 w-full rounded-full border border-[#009CFF] bg-[#009CFF] px-4 py-5 text-sm font-semibold text-white shadow-[0_0_22px_#009CFF55] transition hover:border-[#21B7FF] hover:bg-[#21B7FF]"
               >
                 {mapFile ? `Using ${mapFile.name}` : `Choose an image for ${mapName}`}
               </button>
-              <label className="mt-4 block text-xs uppercase tracking-[0.24em] text-slate-500">
+              <label className="mt-4 block text-xs uppercase tracking-[0.24em] text-[#8EA2FF]">
                 Floor name
                 <input
                   value={mapName}
                   onChange={(event) => updateActiveMap((map) => ({ ...map, name: event.target.value }))}
-                  className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-900/80 px-3 py-2 text-sm text-white outline-none ring-0 transition placeholder:text-slate-500 focus:border-cyan-400/50"
+                  className="mt-2 w-full rounded-2xl border border-[#FFFFFF24] bg-[#020044]/70 px-3 py-2 text-sm text-white outline-none ring-0 transition placeholder:text-[#B9C7FF]/60 focus:border-[#009CFF]"
                 />
               </label>
             </div>
           </aside>
 
           <section className="flex min-w-0 flex-col gap-4">
-            <div className="rounded-[2rem] border border-white/10 bg-slate-950/70 p-4 shadow-[0_24px_60px_rgba(0,0,0,0.3)] backdrop-blur-xl">
+            <div className="rounded-[2rem] border border-[#FFFFFF1F] bg-[#030950CC] p-4 shadow-[0_24px_60px_rgba(2,0,68,0.22)] backdrop-blur-xl">
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-4">
-                  <span className="text-xs uppercase tracking-[0.22em] text-slate-500">Active camera</span>
+                <div className="rounded-3xl border border-[#FFFFFF1F] bg-[#FFFFFF10] p-4">
+                  <span className="text-xs uppercase tracking-[0.22em] text-[#8EA2FF]">Active camera</span>
                   <div className="mt-2 text-sm font-semibold text-white">{activeCameraLabel}</div>
-                  <div className="mt-1 text-sm text-slate-400">{activeCameraCategory}</div>
+                  <div className="mt-1 text-sm text-[#B9C7FF]">{activeCameraCategory}</div>
                 </div>
 
-                <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-4">
-                  <span className="text-xs uppercase tracking-[0.22em] text-slate-500">Export</span>
+                <div className="rounded-3xl border border-[#FFFFFF1F] bg-[#FFFFFF10] p-4">
+                  <span className="text-xs uppercase tracking-[0.22em] text-[#8EA2FF]">Export</span>
                   <button
                     type="button"
                     onClick={exportAllCameraCounts}
                     disabled={!hasAnyPlacements}
-                    className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-900/80 px-3 py-2 text-sm font-medium text-slate-200 transition hover:border-cyan-400/40 hover:bg-slate-900 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/[0.03] disabled:text-slate-500"
+                    className="mt-2 w-full rounded-full border border-[#009CFF] bg-[#009CFF] px-4 py-2 text-sm font-semibold text-white shadow-[0_0_22px_#009CFF55] transition hover:border-[#21B7FF] hover:bg-[#21B7FF] disabled:cursor-not-allowed disabled:border-[#FFFFFF1F] disabled:bg-[#FFFFFF10] disabled:text-[#B9C7FF]/60 disabled:shadow-none"
                   >
                     Export all floors
                   </button>
                 </div>
 
-                <label className="rounded-3xl border border-white/10 bg-white/[0.03] p-4">
-                  <span className="text-xs uppercase tracking-[0.22em] text-slate-500">Scale calibration</span>
+                <label className="rounded-3xl border border-[#FFFFFF1F] bg-[#FFFFFF10] p-4">
+                  <span className="text-xs uppercase tracking-[0.22em] text-[#8EA2FF]">Scale calibration</span>
                   <div className="mt-2 text-sm font-semibold text-white">{formatNumber(mapWidthFt)} ft map width</div>
                   <div className="mt-2 flex flex-wrap gap-2">
                     <button
@@ -1933,10 +1931,10 @@ export default function CameraDesignerClient() {
                         setIsMeasuringDistance(false);
                         updateActiveMap((map) => ({ ...map, scaleMeasurePoints: [] }));
                       }}
-                      className={`rounded-2xl border px-3 py-2 text-xs font-medium transition ${
+                      className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${
                         isMeasuringScale
-                          ? "border-cyan-300/50 bg-cyan-400/20 text-cyan-50"
-                          : "border-white/10 bg-slate-900/70 text-slate-200 hover:border-cyan-400/40 hover:bg-cyan-400/10"
+                          ? "border-[#21B7FF] bg-[#009CFF] text-white shadow-[0_0_22px_#009CFF55]"
+                          : "border-[#009CFF] bg-[#009CFF] text-white shadow-[0_0_22px_#009CFF55] hover:border-[#21B7FF] hover:bg-[#21B7FF]"
                       }`}
                     >
                       {isMeasuringScale ? "Measuring on map" : "Measure with 2 points"}
@@ -1944,12 +1942,12 @@ export default function CameraDesignerClient() {
                     <button
                       type="button"
                       onClick={clearScaleMeasurement}
-                      className="rounded-2xl border border-white/10 bg-slate-900/70 px-3 py-2 text-xs font-medium text-slate-200 transition hover:border-cyan-400/40 hover:bg-cyan-400/10"
+                      className="rounded-full border border-[#FFFFFF59] bg-transparent px-4 py-2 text-xs font-medium text-white transition hover:bg-[#FFFFFF14]"
                     >
                       Clear points
                     </button>
                   </div>
-                  <label className="mt-3 block text-[10px] uppercase tracking-[0.22em] text-slate-500">
+                  <label className="mt-3 block text-[10px] uppercase tracking-[0.22em] text-[#8EA2FF]">
                     Known distance
                     <div className="mt-2 flex items-center gap-2">
                       <input
@@ -1963,12 +1961,12 @@ export default function CameraDesignerClient() {
                             scaleMeasureFeet: Number(event.target.value),
                           }))
                         }
-                        className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-3 py-2 text-sm text-white outline-none transition focus:border-cyan-400/50"
+                        className="w-full rounded-2xl border border-[#FFFFFF1F] bg-[#050B28]/70 px-3 py-2 text-sm text-white outline-none transition focus:border-[#009CFF]"
                       />
-                      <span className="text-sm text-slate-400">ft</span>
+                      <span className="text-sm text-[#B9C7FF]">ft</span>
                     </div>
                   </label>
-                  <div className="mt-3 flex items-center justify-between gap-3 text-xs text-slate-400">
+                  <div className="mt-3 flex items-center justify-between gap-3 text-xs text-[#B9C7FF]">
                     <span>
                       {scaleMeasurePoints.length < 2
                         ? "Click two points on the map"
@@ -1978,8 +1976,8 @@ export default function CameraDesignerClient() {
                   </div>
                 </label>
 
-                <label className="rounded-3xl border border-white/10 bg-white/[0.03] p-4">
-                  <span className="text-xs uppercase tracking-[0.22em] text-slate-500">Measure distance</span>
+                <label className="rounded-3xl border border-[#FFFFFF1F] bg-[#FFFFFF10] p-4">
+                  <span className="text-xs uppercase tracking-[0.22em] text-[#8EA2FF]">Measure distance</span>
                   <div className="mt-2 text-sm font-semibold text-white">
                     {distanceMeasureDistanceFt ? `${formatNumber(distanceMeasureDistanceFt)} ft` : "No distance selected"}
                   </div>
@@ -1991,10 +1989,10 @@ export default function CameraDesignerClient() {
                         setIsMeasuringScale(false);
                         updateActiveMap((map) => ({ ...map, distanceMeasurePoints: [] }));
                       }}
-                      className={`rounded-2xl border px-3 py-2 text-xs font-medium transition ${
+                      className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${
                         isMeasuringDistance
-                          ? "border-violet-300/50 bg-violet-400/20 text-violet-50"
-                          : "border-white/10 bg-slate-900/70 text-slate-200 hover:border-violet-300/40 hover:bg-violet-400/10"
+                          ? "border-[#21B7FF] bg-[#009CFF] text-white shadow-[0_0_22px_#009CFF55]"
+                          : "border-[#009CFF] bg-[#009CFF] text-white shadow-[0_0_22px_#009CFF55] hover:border-[#21B7FF] hover:bg-[#21B7FF]"
                       }`}
                     >
                       {isMeasuringDistance ? "Measuring distance" : "Measure distance"}
@@ -2002,12 +2000,12 @@ export default function CameraDesignerClient() {
                     <button
                       type="button"
                       onClick={clearDistanceMeasurement}
-                      className="rounded-2xl border border-white/10 bg-slate-900/70 px-3 py-2 text-xs font-medium text-slate-200 transition hover:border-violet-300/40 hover:bg-violet-400/10"
+                      className="rounded-full border border-[#FFFFFF59] bg-transparent px-4 py-2 text-xs font-medium text-white transition hover:bg-[#FFFFFF14]"
                     >
                       Clear measure
                     </button>
                   </div>
-                  <div className="mt-3 flex items-center justify-between gap-3 text-xs text-slate-400">
+                  <div className="mt-3 flex items-center justify-between gap-3 text-xs text-[#B9C7FF]">
                     <span>
                       {distanceMeasurePoints.length < 2
                         ? "Click two points on the map"
@@ -2019,7 +2017,7 @@ export default function CameraDesignerClient() {
               </div>
             </div>
 
-            <div className="relative flex min-h-[42rem] flex-1 overflow-hidden rounded-[2rem] border border-white/10 bg-slate-950/70 shadow-[0_24px_60px_rgba(0,0,0,0.3)] backdrop-blur-xl">
+            <div className="relative flex min-h-[42rem] flex-1 overflow-hidden rounded-[2rem] border border-[#FFFFFF24] bg-[#030950CC] shadow-[0_24px_60px_rgba(2,0,68,0.28)] backdrop-blur-xl">
               <div
                 ref={stageRef}
                 onDragOver={(event) => event.preventDefault()}
@@ -2035,7 +2033,7 @@ export default function CameraDesignerClient() {
                 onClick={handleStageClick}
                 onMouseMove={handleStageMouseMove}
                 onMouseLeave={handleStageMouseLeave}
-                className="relative w-full overflow-hidden rounded-[2rem] border border-white/5 bg-slate-900/80"
+                className="relative w-full overflow-hidden rounded-[2rem] border border-[#FFFFFF2E] bg-[linear-gradient(180deg,#050B28_0%,#020619_100%)]"
                 style={{ aspectRatio: mapAspect, maxHeight: "72vh" }}
               >
                 {mapUrl ? (
@@ -2054,7 +2052,7 @@ export default function CameraDesignerClient() {
                     }}
                   />
                 ) : (
-                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-[radial-gradient(circle_at_50%_35%,rgba(34,211,238,0.18),transparent_24%),linear-gradient(135deg,rgba(15,23,42,0.95),rgba(3,7,18,0.98))] p-8">
+                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-[linear-gradient(180deg,#050B28_0%,#020619_100%)] p-8">
                     <div className="w-full max-w-xl">
                       <Image
                         src="/openeye-logo.svg"
@@ -2062,14 +2060,14 @@ export default function CameraDesignerClient() {
                         width={520}
                         height={301}
                         priority
-                        className="h-auto w-full"
+                        className="h-auto w-full opacity-20"
                       />
                     </div>
                   </div>
                 )}
 
-                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:48px_48px] opacity-40" />
-                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,transparent_0,rgba(0,0,0,0.2)_72%,rgba(0,0,0,0.45)_100%)]" />
+                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:48px_48px]" />
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,transparent_0,rgba(2,6,25,0.22)_72%,rgba(2,6,25,0.62)_100%)]" />
 
                 {isMeasuringScale && scaleMeasurePoints.length > 0 ? (
                   <svg className="pointer-events-none absolute inset-0 h-full w-full overflow-hidden">
@@ -2213,16 +2211,16 @@ export default function CameraDesignerClient() {
 
                 {hoverStats && hoverPoint && hoverStats.insideFov ? (
                   <div
-                    className="pointer-events-none absolute z-20 rounded-2xl border border-cyan-300/30 bg-slate-950/90 px-3 py-2 text-[11px] text-slate-100 shadow-2xl backdrop-blur-md"
+                    className="pointer-events-none absolute z-20 rounded-2xl border border-[#FFFFFF24] bg-[#030950E6] px-3 py-2 text-[11px] text-[#D8E2FF] shadow-2xl backdrop-blur-md"
                     style={{ left: `${hoverPoint.x * 100}%`, top: `${hoverPoint.y * 100}%`, transform: "translate(16px, 16px)" }}
                   >
-                    <div className="text-[10px] uppercase tracking-[0.22em] text-cyan-200">Hover readout</div>
+                    <div className="text-[10px] uppercase tracking-[0.22em] text-[#8EA2FF]">Hover readout</div>
                     <div className="mt-1 font-semibold text-white">
                       {hoverStats.recognitionType}
                       {!hoverStats.insideFov ? " - outside FOV" : ""}
                     </div>
-                    <div className="mt-1 text-slate-300">{formatNumber(hoverStats.pixelsPerFoot, 1)} ppf</div>
-                    <div className="text-slate-400">{formatNumber(hoverStats.distanceFt, 1)} ft from selected camera</div>
+                    <div className="mt-1 text-[#D8E2FF]">{formatNumber(hoverStats.pixelsPerFoot, 1)} ppf</div>
+                    <div className="text-[#B9C7FF]">{formatNumber(hoverStats.distanceFt, 1)} ft from selected camera</div>
                   </div>
                 ) : null}
 
@@ -2250,23 +2248,23 @@ export default function CameraDesignerClient() {
                       style={{ left: `${placement.x * 100}%`, top: `${placement.y * 100}%` }}
                     >
                       <div
-                        className={`absolute left-1/2 top-1/2 h-36 w-36 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/10 bg-cyan-300/10 opacity-0 blur-2xl transition duration-300 group-hover:opacity-100 ${
+                        className={`absolute left-1/2 top-1/2 h-36 w-36 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#FFFFFF14] bg-[#009CFF14] opacity-0 blur-2xl transition duration-300 group-hover:opacity-100 ${
                           isSelected ? "opacity-100" : ""
                         }`}
                       />
-                      <div className={`relative grid h-12 w-12 place-items-center rounded-full border-2 bg-slate-950 shadow-lg ${isSelected ? "border-cyan-300" : "border-white/30"}`}>
+                      <div className={`relative grid h-12 w-12 place-items-center rounded-full border-2 bg-[#050B28] shadow-lg ${isSelected ? "border-[#21B7FF]" : "border-[#FFFFFF59]"}`}>
                         <div className={`h-4 w-4 rounded-full bg-gradient-to-br ${model.accent}`} />
                         {isMultisensorModel(model)
                           ? getDrawableHeads(placement, model).map((head) => (
                               <span
                                 key={head.id}
-                                className="absolute left-1/2 top-1/2 h-1 w-5 origin-left rounded-full bg-cyan-200/80"
+                                className="absolute left-1/2 top-1/2 h-1 w-5 origin-left rounded-full bg-[#21B7FF]/80"
                                 style={{ transform: `rotate(${head.rotationDeg - 90}deg) translateX(7px)` }}
                               />
                             ))
                           : null}
                       </div>
-                      <div className="pointer-events-none absolute left-1/2 top-full mt-3 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/10 bg-slate-950/90 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.22em] text-slate-200 shadow-xl">
+                      <div className="pointer-events-none absolute left-1/2 top-full mt-3 -translate-x-1/2 whitespace-nowrap rounded-full border border-[#FFFFFF24] bg-[#030950E6] px-3 py-1 text-[10px] font-medium uppercase tracking-[0.22em] text-[#D8E2FF] shadow-xl">
                         {model.name}
                       </div>
                     </button>
@@ -2295,26 +2293,26 @@ export default function CameraDesignerClient() {
             </div>
           </section>
 
-          <aside className="rounded-[2rem] border border-white/10 bg-slate-950/70 p-4 shadow-[0_24px_60px_rgba(0,0,0,0.3)] backdrop-blur-xl">
-            <div className="border-b border-white/10 pb-4">
+          <aside className="rounded-[2rem] border border-[#FFFFFF24] bg-[#030950CC] p-4 shadow-[0_24px_60px_rgba(2,0,68,0.24)] backdrop-blur-xl">
+            <div className="border-b border-[#FFFFFF24] pb-4">
               <h2 className="text-lg font-semibold text-white">Inspector</h2>
-              <p className="text-sm text-slate-400">Fine-tune the selected camera or review its calculated field of view.</p>
+              <p className="text-sm text-[#B9C7FF]">Fine-tune the selected camera or review its calculated field of view.</p>
             </div>
 
             {selectedPlacement && selectedModel && inspectedStats ? (
               <div className="mt-4 space-y-4">
-                <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-4">
+                <div className="rounded-3xl border border-[#FFFFFF1F] bg-[#FFFFFF10] p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <div className="text-sm uppercase tracking-[0.22em] text-slate-500">Selected camera</div>
+                      <div className="text-sm uppercase tracking-[0.22em] text-[#8EA2FF]">Selected camera</div>
                       <div className="mt-2 text-lg font-semibold text-white">{selectedModel.name}</div>
-                      <div className="mt-1 text-sm text-slate-400">{selectedModel.description}</div>
+                      <div className="mt-1 text-sm text-[#B9C7FF]">{selectedModel.description}</div>
                     </div>
                     <div className="flex gap-2">
                       <button
                         type="button"
                         onClick={duplicateSelectedPlacement}
-                        className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs font-medium text-slate-200 transition hover:border-cyan-300/40 hover:bg-cyan-400/10"
+                        className="rounded-full border border-[#FFFFFF59] bg-transparent px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[#FFFFFF14]"
                       >
                         Duplicate
                       </button>
@@ -2350,13 +2348,13 @@ export default function CameraDesignerClient() {
                 {isMultisensorModel(selectedModel) ? (
                   <div className="space-y-3">
                     {getDrawableHeads(selectedPlacement, selectedModel).map((head) => (
-                      <div key={head.id} className="rounded-3xl border border-white/10 bg-white/[0.03] p-4">
+                      <div key={head.id} className="rounded-3xl border border-[#FFFFFF1F] bg-[#FFFFFF10] p-4">
                         <div className="flex items-center justify-between gap-3">
                           <div>
                             <div className="text-sm font-semibold text-white">{head.label}</div>
-                            <div className="text-xs text-slate-400">{formatNumber(head.rotationDeg, 0)} deg absolute view</div>
+                            <div className="text-xs text-[#B9C7FF]">{formatNumber(head.rotationDeg, 0)} deg absolute view</div>
                           </div>
-                          <span className="rounded-full border border-white/10 px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-slate-300">
+                          <span className="rounded-full border border-[#FFFFFF24] px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-[#8EA2FF]">
                             Adjustable
                           </span>
                         </div>
@@ -2424,9 +2422,9 @@ export default function CameraDesignerClient() {
                   <InfoCard label="Aim distance" value={`${formatNumber(inspectedStats.aimDistanceFt)} ft`} />
                 </div>
 
-                <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-4">
-                  <div className="text-xs uppercase tracking-[0.22em] text-slate-500">Planning math</div>
-                  <div className="mt-3 space-y-2 text-sm text-slate-300">
+                <div className="rounded-3xl border border-[#FFFFFF1F] bg-[#FFFFFF10] p-4">
+                  <div className="text-xs uppercase tracking-[0.22em] text-[#8EA2FF]">Planning math</div>
+                  <div className="mt-3 space-y-2 text-sm text-[#D8E2FF]">
                     <Row label="Coverage width" value={`${formatNumber(inspectedStats.coverageWidthFt)} ft`} />
                     <Row label="Target distance" value={`${formatNumber(inspectedStats.targetDistanceFt)} ft`} />
                     {inspectedStats.zoneBands.map((band) => (
@@ -2437,13 +2435,13 @@ export default function CameraDesignerClient() {
                   </div>
                 </div>
 
-                <div className="rounded-3xl border border-cyan-400/20 bg-cyan-400/10 p-4 text-sm text-cyan-50">
+                <div className="rounded-3xl border border-[#FFFFFF1F] bg-[#FFFFFF10] p-4 text-sm text-[#D8E2FF]">
                   The cone is anchored to the selected camera, while the lens and mount height shift the recognition
                   distance in real time. Drag the marker to reposition it.
                 </div>
               </div>
             ) : (
-              <div className="mt-4 rounded-3xl border border-dashed border-white/10 bg-white/[0.03] p-5 text-sm leading-6 text-slate-300">
+              <div className="mt-4 rounded-3xl border border-dashed border-[#FFFFFF1F] bg-[#FFFFFF10] p-5 text-sm leading-6 text-[#B9C7FF]">
                 No camera selected yet. Drop a model onto the map, then click its marker to tune mount height, lens,
                 tilt, and rotation.
               </div>
@@ -2457,28 +2455,28 @@ export default function CameraDesignerClient() {
 
 function MetricCard({ label, value, helper }: { label: string; value: string; helper: string }) {
   return (
-    <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-4 shadow-[0_12px_40px_rgba(0,0,0,0.15)]">
-      <div className="text-xs uppercase tracking-[0.24em] text-slate-500">{label}</div>
+    <div className="rounded-[1.5rem] border border-[#FFFFFF1F] bg-[#FFFFFF10] p-4 shadow-[0_12px_40px_rgba(2,0,68,0.16)]">
+      <div className="text-xs uppercase tracking-[0.24em] text-[#8EA2FF]">{label}</div>
       <div className="mt-2 text-2xl font-semibold text-white">{value}</div>
-      <div className="mt-1 text-sm text-slate-400">{helper}</div>
+      <div className="mt-1 text-sm text-[#B9C7FF]">{helper}</div>
     </div>
   );
 }
 
 function StatPanel({ label, value, helper }: { label: string; value: string; helper: string }) {
   return (
-    <div className="rounded-[1.5rem] border border-white/10 bg-slate-950/70 p-4 shadow-[0_12px_40px_rgba(0,0,0,0.15)]">
-      <div className="text-xs uppercase tracking-[0.24em] text-slate-400">{label}</div>
+    <div className="rounded-[1.5rem] border border-[#FFFFFF1F] bg-[#030950CC] p-4 shadow-[0_12px_40px_rgba(2,0,68,0.16)]">
+      <div className="text-xs uppercase tracking-[0.24em] text-[#8EA2FF]">{label}</div>
       <div className="mt-2 text-lg font-semibold text-white">{value}</div>
-      <div className="mt-1 text-sm text-slate-300">{helper}</div>
+      <div className="mt-1 text-sm text-[#B9C7FF]">{helper}</div>
     </div>
   );
 }
 
 function InfoChip({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-slate-900/70 px-3 py-2">
-      <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500">{label}</div>
+    <div className="rounded-2xl border border-[#FFFFFF1F] bg-[#FFFFFF10] px-3 py-2">
+      <div className="text-[10px] uppercase tracking-[0.18em] text-[#8EA2FF]">{label}</div>
       <div className="mt-1 text-sm font-medium text-white">{value}</div>
     </div>
   );
@@ -2502,8 +2500,8 @@ function ControlSlider({
   onChange: (value: number) => void;
 }) {
   return (
-    <label className="block rounded-3xl border border-white/10 bg-white/[0.03] p-4">
-      <div className="flex items-center justify-between gap-4 text-sm text-slate-200">
+    <label className="block rounded-3xl border border-[#FFFFFF1F] bg-[#FFFFFF10] p-4">
+      <div className="flex items-center justify-between gap-4 text-sm text-[#D8E2FF]">
         <span>{label}</span>
         <span className="font-semibold text-white">
           {formatNumber(value, unit === "mm" ? 1 : 0)} {unit}
@@ -2516,7 +2514,7 @@ function ControlSlider({
         step={step}
         value={value}
         onChange={(event) => onChange(Number(event.target.value))}
-        className="mt-3 h-2 w-full accent-cyan-400"
+        className="mt-3 h-2 w-full accent-[#009CFF]"
       />
     </label>
   );
@@ -2524,8 +2522,8 @@ function ControlSlider({
 
 function InfoCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-3">
-      <div className="text-[10px] uppercase tracking-[0.22em] text-slate-500">{label}</div>
+    <div className="rounded-3xl border border-[#FFFFFF1F] bg-[#FFFFFF10] p-3">
+      <div className="text-[10px] uppercase tracking-[0.22em] text-[#8EA2FF]">{label}</div>
       <div className="mt-1 text-sm font-semibold text-white">{value}</div>
     </div>
   );
@@ -2534,7 +2532,7 @@ function InfoCard({ label, value }: { label: string; value: string }) {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-4">
-      <span className="text-slate-400">{label}</span>
+      <span className="text-[#B9C7FF]">{label}</span>
       <span className="font-medium text-white">{value}</span>
     </div>
   );
