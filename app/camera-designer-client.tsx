@@ -1106,6 +1106,36 @@ function escapeCsvValue(value: string | number) {
   return `"${text.replace(/"/g, '""')}"`;
 }
 
+function escapeHtml(value: string | number) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function getCameraCountRows(map: MapSlot, cameraModels: CameraModel[]) {
+  const counts = map.placements.reduce<Record<string, number>>((totals, placement) => {
+    totals[placement.modelId] = (totals[placement.modelId] ?? 0) + 1;
+
+    return totals;
+  }, {});
+
+  return Object.entries(counts)
+    .map(([modelId, quantity]) => {
+      const model = cameraModels.find((item) => item.id === modelId);
+
+      return {
+        modelId,
+        modelName: model?.name ?? modelId,
+        category: model?.category ?? "Camera",
+        quantity,
+      };
+    })
+    .sort((a, b) => a.modelName.localeCompare(b.modelName));
+}
+
 function getHoverReadout(
   hoverPoint: { x: number; y: number },
   placement: Placement,
@@ -1196,6 +1226,7 @@ export default function CameraDesignerClient() {
   const [draggingPlacementId, setDraggingPlacementId] = useState<string | null>(null);
   const [isMeasuringScale, setIsMeasuringScale] = useState(false);
   const [isMeasuringDistance, setIsMeasuringDistance] = useState(false);
+  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   const [hoverPoint, setHoverPoint] = useState<{ x: number; y: number } | null>(null);
 
   const stageRef = useRef<HTMLDivElement | null>(null);
@@ -1653,25 +1684,13 @@ export default function CameraDesignerClient() {
   }
 
   function exportAllCameraCounts() {
-    const rows = maps.flatMap((map, floorIndex) => {
-      const counts = map.placements.reduce<Record<string, number>>((totals, placement) => {
-        totals[placement.modelId] = (totals[placement.modelId] ?? 0) + 1;
-
-        return totals;
-      }, {});
-
-      return Object.entries(counts)
-        .map(([modelId, quantity]) => {
-          const model = cameraModels.find((item) => item.id === modelId);
-
-          return {
-            floor: map.name || `Floor ${floorIndex + 1}`,
-            model: model?.name ?? modelId,
-            quantity,
-          };
-        })
-        .sort((a, b) => a.model.localeCompare(b.model));
-    });
+    const rows = maps.flatMap((map, floorIndex) =>
+      getCameraCountRows(map, cameraModels).map((row) => ({
+        floor: map.name || `Floor ${floorIndex + 1}`,
+        model: row.modelName,
+        quantity: row.quantity,
+      })),
+    );
     const csv = [
       "Floor,Model,Quantity",
       ...rows.map((row) => [row.floor, row.model, row.quantity].map(escapeCsvValue).join(",")),
@@ -1684,6 +1703,299 @@ export default function CameraDesignerClient() {
     link.download = "camera-counts-by-floor.csv";
     link.click();
     URL.revokeObjectURL(url);
+  }
+
+  function buildReportFloorSvg(map: MapSlot) {
+    const reportWidth = 1100;
+    const reportHeight = Math.round(reportWidth / Math.max(map.aspect, 0.2));
+    const reportStageSize = { width: reportWidth, height: reportHeight };
+
+    const zonePaths = map.placements
+      .flatMap((placement) => {
+        const model = cameraModels.find((item) => item.id === placement.modelId);
+
+        if (!model) return [];
+
+        return getDrawableHeads(placement, model).flatMap((head) => {
+          const stats = buildCameraStats(placement, model, reportStageSize, map.widthFt, activeThreshold, head);
+
+          return stats.zoneBands.map((band, index) => {
+            const fill = index === 0 ? "rgba(255,107,53,0.10)" : index === 1 ? "rgba(0,156,255,0.16)" : "rgba(33,183,255,0.22)";
+            const stroke = index === 0 ? "rgba(255,107,53,0.62)" : index === 1 ? "rgba(0,156,255,0.64)" : "rgba(33,183,255,0.78)";
+
+            return `<path d="${escapeHtml(band.pathD)}" fill="${fill}" stroke="${stroke}" stroke-width="2" stroke-opacity="0.8" fill-opacity="0.85" />`;
+          });
+        });
+      })
+      .join("");
+
+    const markers = map.placements
+      .map((placement, index) => {
+        const model = cameraModels.find((item) => item.id === placement.modelId);
+        const cx = placement.x * reportWidth;
+        const cy = placement.y * reportHeight;
+
+        return `
+          <g>
+            <circle cx="${cx}" cy="${cy}" r="16" fill="#050B28" stroke="#21B7FF" stroke-width="3" />
+            <circle cx="${cx}" cy="${cy}" r="6" fill="#009CFF" />
+            <text x="${cx}" y="${cy + 34}" text-anchor="middle" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="15" font-weight="700">${index + 1}</text>
+            <text x="${cx}" y="${cy + 51}" text-anchor="middle" fill="#D8E2FF" font-family="Arial, sans-serif" font-size="10" font-weight="700">${escapeHtml(model?.name ?? placement.modelId)}</text>
+          </g>
+        `;
+      })
+      .join("");
+
+    return `
+      <div class="map-frame" style="aspect-ratio:${map.aspect};">
+        ${
+          map.url
+            ? `<img class="map-image" src="${escapeHtml(map.url)}" alt="${escapeHtml(map.name)}" />`
+            : `<div class="map-empty">No map image loaded</div>`
+        }
+        <svg class="map-overlay" viewBox="0 0 ${reportWidth} ${reportHeight}" preserveAspectRatio="none" aria-hidden="true">
+          ${zonePaths}
+          ${markers}
+        </svg>
+      </div>
+    `;
+  }
+
+  function buildReportHtml() {
+    const generatedAt = new Date().toLocaleString();
+    const floorSections = maps
+      .map((map, floorIndex) => {
+        const rows = getCameraCountRows(map, cameraModels);
+        const totalCameras = map.placements.length;
+        const cameraRows =
+          rows.length > 0
+            ? rows
+                .map(
+                  (row) => `
+                    <tr>
+                      <td>${escapeHtml(row.modelName)}</td>
+                      <td>${escapeHtml(row.category)}</td>
+                      <td class="qty">${row.quantity}</td>
+                    </tr>
+                  `,
+                )
+                .join("")
+            : `<tr><td colspan="3" class="empty-row">No cameras placed on this floor.</td></tr>`;
+
+        return `
+          <section class="floor-section">
+            <div class="floor-header">
+              <div>
+                <div class="eyebrow">Floor ${floorIndex + 1}</div>
+                <h2>${escapeHtml(map.name || `Floor ${floorIndex + 1}`)}</h2>
+              </div>
+              <div class="floor-meta">
+                <strong>${totalCameras}</strong>
+                <span>${totalCameras === 1 ? "camera" : "cameras"}</span>
+              </div>
+            </div>
+            ${buildReportFloorSvg(map)}
+            <table>
+              <thead>
+                <tr>
+                  <th>Camera model</th>
+                  <th>Style</th>
+                  <th class="qty">Qty</th>
+                </tr>
+              </thead>
+              <tbody>${cameraRows}</tbody>
+            </table>
+          </section>
+        `;
+      })
+      .join("");
+
+    return `<!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>OpenEye Site Designer Report</title>
+          <style>
+            * { box-sizing: border-box; }
+            body {
+              margin: 0;
+              background: #eef7ff;
+              color: #050B28;
+              font-family: Arial, Helvetica, sans-serif;
+            }
+            .report {
+              max-width: 1120px;
+              margin: 0 auto;
+              padding: 32px;
+            }
+            .title {
+              display: flex;
+              align-items: flex-end;
+              justify-content: space-between;
+              gap: 24px;
+              margin-bottom: 28px;
+              border-bottom: 3px solid #009CFF;
+              padding-bottom: 18px;
+            }
+            h1, h2 { margin: 0; }
+            h1 { color: #0500D8; font-size: 32px; }
+            h2 { color: #050B28; font-size: 24px; }
+            .eyebrow {
+              color: #0500D8;
+              font-size: 11px;
+              font-weight: 700;
+              letter-spacing: 0.2em;
+              margin-bottom: 6px;
+              text-transform: uppercase;
+            }
+            .meta {
+              color: #3e4b72;
+              font-size: 12px;
+              text-align: right;
+            }
+            .floor-section {
+              break-after: page;
+              page-break-after: always;
+              margin-bottom: 32px;
+              border: 1px solid #d7e7ff;
+              background: #ffffff;
+              padding: 22px;
+              box-shadow: 0 18px 42px rgba(0, 156, 255, 0.12);
+            }
+            .floor-section:last-child {
+              break-after: auto;
+              page-break-after: auto;
+            }
+            .floor-header {
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              gap: 20px;
+              margin-bottom: 16px;
+            }
+            .floor-meta {
+              min-width: 110px;
+              border: 1px solid #d7e7ff;
+              border-radius: 14px;
+              padding: 12px;
+              text-align: center;
+            }
+            .floor-meta strong {
+              display: block;
+              color: #0500D8;
+              font-size: 26px;
+              line-height: 1;
+            }
+            .floor-meta span {
+              color: #3e4b72;
+              font-size: 11px;
+              font-weight: 700;
+              letter-spacing: 0.12em;
+              text-transform: uppercase;
+            }
+            .map-frame {
+              position: relative;
+              width: 100%;
+              overflow: hidden;
+              border: 1px solid #c9def8;
+              border-radius: 18px;
+              background: linear-gradient(180deg, #050B28 0%, #020619 100%);
+            }
+            .map-image, .map-overlay {
+              position: absolute;
+              inset: 0;
+              width: 100%;
+              height: 100%;
+            }
+            .map-image {
+              object-fit: fill;
+            }
+            .map-empty {
+              display: grid;
+              min-height: 360px;
+              place-items: center;
+              color: #D8E2FF;
+              font-weight: 700;
+            }
+            table {
+              width: 100%;
+              margin-top: 18px;
+              border-collapse: collapse;
+              font-size: 13px;
+            }
+            th {
+              background: #050B28;
+              color: #ffffff;
+              letter-spacing: 0.1em;
+              text-align: left;
+              text-transform: uppercase;
+            }
+            th, td {
+              border: 1px solid #d7e7ff;
+              padding: 10px 12px;
+            }
+            td {
+              color: #101a3a;
+            }
+            .qty {
+              text-align: right;
+              width: 88px;
+            }
+            .empty-row {
+              color: #3e4b72;
+              text-align: center;
+            }
+            @media print {
+              body { background: #ffffff; }
+              .report { max-width: none; padding: 0; }
+              .floor-section { box-shadow: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <main class="report">
+            <header class="title">
+              <div>
+                <div class="eyebrow">OpenEye Site Designer</div>
+                <h1>Camera Placement Report</h1>
+              </div>
+              <div class="meta">
+                Version ${escapeHtml(appVersion)}<br />
+                Generated ${escapeHtml(generatedAt)}
+              </div>
+            </header>
+            ${floorSections}
+          </main>
+          <script>
+            window.addEventListener("load", () => {
+              const images = Array.from(document.images);
+              const imageLoads = images.map((image) => {
+                if (image.complete) return Promise.resolve();
+                return new Promise((resolve) => {
+                  image.addEventListener("load", resolve, { once: true });
+                  image.addEventListener("error", resolve, { once: true });
+                });
+              });
+
+              Promise.all(imageLoads).then(() => {
+                setTimeout(() => window.print(), 250);
+              });
+            });
+          </script>
+        </body>
+      </html>`;
+  }
+
+  function printCameraReport() {
+    const reportWindow = window.open("", "_blank");
+
+    if (!reportWindow) {
+      return;
+    }
+
+    reportWindow.document.open();
+    reportWindow.document.write(buildReportHtml());
+    reportWindow.document.close();
   }
 
   return (
@@ -1910,14 +2222,40 @@ export default function CameraDesignerClient() {
 
                 <div className="rounded-3xl border border-[#FFFFFF1F] bg-[#FFFFFF10] p-4">
                   <span className="text-xs uppercase tracking-[0.22em] text-[#8EA2FF]">Export</span>
-                  <button
-                    type="button"
-                    onClick={exportAllCameraCounts}
-                    disabled={!hasAnyPlacements}
-                    className="mt-2 w-full rounded-full border border-[#009CFF] bg-[#009CFF] px-4 py-2 text-sm font-semibold text-white shadow-[0_0_22px_#009CFF55] transition hover:border-[#21B7FF] hover:bg-[#21B7FF] disabled:cursor-not-allowed disabled:border-[#FFFFFF1F] disabled:bg-[#FFFFFF10] disabled:text-[#B9C7FF]/60 disabled:shadow-none"
-                  >
-                    Export all floors
-                  </button>
+                  <div className="relative mt-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsExportMenuOpen((currentValue) => !currentValue)}
+                      disabled={!hasAnyPlacements}
+                      className="w-full rounded-full border border-[#009CFF] bg-[#009CFF] px-4 py-2 text-sm font-semibold text-white shadow-[0_0_22px_#009CFF55] transition hover:border-[#21B7FF] hover:bg-[#21B7FF] disabled:cursor-not-allowed disabled:border-[#FFFFFF1F] disabled:bg-[#FFFFFF10] disabled:text-[#B9C7FF]/60 disabled:shadow-none"
+                    >
+                      Export all floors
+                    </button>
+                    {isExportMenuOpen && hasAnyPlacements ? (
+                      <div className="absolute right-0 z-30 mt-2 w-48 overflow-hidden rounded-2xl border border-[#FFFFFF24] bg-[#030950F2] p-1 shadow-[0_18px_40px_rgba(2,0,68,0.35)] backdrop-blur-xl">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsExportMenuOpen(false);
+                            exportAllCameraCounts();
+                          }}
+                          className="block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-white transition hover:bg-[#FFFFFF14]"
+                        >
+                          BOM CSV
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsExportMenuOpen(false);
+                            printCameraReport();
+                          }}
+                          className="block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-white transition hover:bg-[#FFFFFF14]"
+                        >
+                          Report PDF
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
 
                 <label className="rounded-3xl border border-[#FFFFFF1F] bg-[#FFFFFF10] p-4">
