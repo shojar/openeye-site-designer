@@ -2745,13 +2745,13 @@ export default function CameraDesignerClient() {
             {selectedPlacement && selectedModel && inspectedStats ? (
               <div className="mt-4 space-y-4">
                 <div className="rounded-3xl border border-[#FFFFFF1F] bg-[#FFFFFF10] p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="text-sm uppercase tracking-[0.22em] text-[#8EA2FF]">Selected camera</div>
-                      <div className="mt-2 text-lg font-semibold text-white">{selectedModel.name}</div>
-                      <div className="mt-1 text-sm text-[#B9C7FF]">{selectedModel.description}</div>
-                    </div>
-                    <div className="flex gap-2">
+                  <div>
+                    <div className="text-sm uppercase tracking-[0.22em] text-[#8EA2FF]">Selected camera</div>
+                    <div className="mt-2 text-lg font-semibold text-white">{selectedModel.name}</div>
+                    <div className="mt-1 text-sm text-[#B9C7FF]">{selectedModel.description}</div>
+                  </div>
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <button
                         type="button"
                         onClick={duplicateSelectedPlacement}
@@ -2770,14 +2770,14 @@ export default function CameraDesignerClient() {
                       >
                         {selectedPlacement.showFov === false ? "Show FOV" : "Hide FOV"}
                       </button>
-                      <button
-                        type="button"
-                        onClick={deleteSelectedPlacement}
-                        className="rounded-full border border-rose-400/30 bg-rose-500/10 px-3 py-1.5 text-xs font-medium text-rose-100 transition hover:bg-rose-500/20"
-                      >
-                        Delete
-                      </button>
                     </div>
+                    <button
+                      type="button"
+                      onClick={deleteSelectedPlacement}
+                      className="ml-auto rounded-full border border-rose-400/30 bg-rose-500/10 px-3 py-1.5 text-xs font-medium text-rose-100 transition hover:bg-rose-500/20"
+                    >
+                      Delete
+                    </button>
                   </div>
                 </div>
 
